@@ -1,0 +1,29 @@
+name: AI Docal — Auto Score Submission
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # every 15 minutes, 24/7
+  workflow_dispatch:           # manual trigger from GitHub UI
+
+jobs:
+  submit-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install web3 requests numpy python-dotenv
+
+      - name: Submit risk score to blockchain
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: python submit_score.py

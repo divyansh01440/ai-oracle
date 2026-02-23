@@ -1,0 +1,11 @@
+{
+  "network": "amoy",
+  "chainId": 80002,
+  "contractName": "VerifiableAIOracle",
+  "contractAddress": "0x4957Bb834169De7721cC87622FB9cFf839cC6201",
+  "deployerAddress": "0xFc8160F201aCc6CcBEdb79e1629D75dF3cb13d8B",
+  "transactionHash": "0xd4a424294be86c2cb097c5a9a30e7f772d46c39b1da56956eee8b11e477ac899",
+  "deployedAt": "2026-02-22T16:41:46.322Z",
+  "explorerUrl": "https://amoy.polygonscan.com/address/0x4957Bb834169De7721cC87622FB9cFf839cC6201",
+  "abi_note": "Full ABI is in artifacts/contracts/OracleContract.sol/VerifiableAIOracle.json"
+}

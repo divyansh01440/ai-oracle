@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifiable AI Oracle — Polygon Amoy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ethers.js v5 for blockchain reading (no wallet needed, read-only) -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg:        #03050f;
+            --panel:     #080c1a;
+            --border:    rgba(0,210,255,0.12);
+            --border-hl: rgba(0,210,255,0.35);
+            --cyan:      #00d2ff;
+            --cyan-dim:  rgba(0,210,255,0.15);
+            --green:     #00ff87;
+            --yellow:    #ffe066;
+            --red:       #ff4057;
+            --text:      #c8d8e8;
+            --text-dim:  #4a5a72;
+            --mono:      'Space Mono', monospace;
+            --sans:      'DM Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scanline overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Grid background */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        /* ── HEADER ─────────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-block h1 {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
+        }
+
+        .logo-block .tagline {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .network-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--cyan-dim);
+            border: 1px solid var(--border-hl);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--cyan);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: blink 1.8s ease-in-out infinite;
+        }
+
+        .dot.error { background: var(--red); animation: none; }
+        .dot.loading { background: var(--yellow); }
+
+        @keyframes blink {
+            0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,255,135,0.6); }
+            50% { opacity:0.6; box-shadow: 0 0 0 5px rgba(0,255,135,0); }
+        }
+
+        .refresh-info {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* ── MAIN SCORE ──────────────────────────── */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .score-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 48px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            opacity: 0.6;
+        }
+
+        .score-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 16px;
+        }
+
+        .score-number {
+            font-family: var(--mono);
+            font-size: 96px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+            transition: color 0.4s ease;
+        }
+
+        .score-number.safe     { color: var(--green); text-shadow: 0 0 40px rgba(0,255,135,0.3); }
+        .score-number.medium   { color: var(--yellow); text-shadow: 0 0 40px rgba(255,224,102,0.3); }
+        .score-number.danger   { color: var(--red);    text-shadow: 0 0 40px rgba(255,64,87,0.3); }
+        .score-number.loading  { color: var(--text-dim); }
+
+        .score-max {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 8px 20px;
+            border-radius: 2px;
+            transition: all 0.4s ease;
+        }
+
+        .status-badge.safe   { background: rgba(0,255,135,0.12); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
+        .status-badge.medium { background: rgba(255,224,102,0.12); color: var(--yellow); border: 1px solid rgba(255,224,102,0.3); }
+        .status-badge.danger { background: rgba(255,64,87,0.12); color: var(--red); border: 1px solid rgba(255,64,87,0.3); }
+        .status-badge.loading { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--border-hl); }
+
+        /* Safe meter panel */
+        .safe-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 48px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .safe-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .safe-verdict {
+            font-family: var(--mono);
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            transition: color 0.4s;
+        }
+
+        .safe-verdict.yes { color: var(--green); }
+        .safe-verdict.no  { color: var(--red); }
+        .safe-verdict.loading { color: var(--text-dim); }
+
+        /* Gauge ring */
+        .gauge-wrap {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .gauge-wrap svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.05);
+            stroke-width: 8;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 377;
+            transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
+        }
+
+        .gauge-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-pct {
+            font-family: var(--mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .gauge-sub {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ── STATS ROW ───────────────────────────── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .stat {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 24px 28px;
+            transition: border-color 0.2s;
+        }
+
+        .stat:hover { border-color: var(--border-hl); }
+
+        .stat-lbl {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .stat-val {
+            font-family: var(--mono);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-bottom: 4px;
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        /* ── CHART ───────────────────────────────── */
+        .chart-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 32px;
+            margin-bottom: 2px;
+        }
+
+        .panel-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .chart-box {
+            height: 280px;
+            position: relative;
+        }
+
+        /* ── FEED ────────────────────────────────── */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .feed-panel, .defi-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 32px;
+        }
+
+        .feed-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feed-item:last-child { border-bottom: none; }
+
+        .feed-ts {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-bottom: 3px;
+        }
+
+        .feed-desc {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .feed-score {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 2px;
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border: 1px solid var(--border);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        /* ── DEFI ────────────────────────────────── */
+        .defi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .defi-card {
+            border: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+            border-radius: 2px;
+        }
+
+        .defi-card-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .defi-val {
+            font-family: var(--mono);
+            font-size: 18px;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        .defi-val.open   { background: rgba(0,255,135,0.1); color: var(--green); border: 1px solid rgba(0,255,135,0.25); }
+        .defi-val.closed { background: rgba(255,64,87,0.1);  color: var(--red);   border: 1px solid rgba(255,64,87,0.25); }
+
+        /* ── RAW CONTRACT DATA ───────────────────── */
+        .raw-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 32px;
+            margin-bottom: 2px;
+        }
+
+        .raw-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .raw-field {
+            background: #03060f;
+            border: 1px solid var(--border);
+            padding: 16px 20px;
+            border-radius: 2px;
+        }
+
+        .raw-field-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .raw-field-value {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--cyan);
+            word-break: break-all;
+        }
+
+        .raw-field-value.highlight {
+            color: var(--green);
+            font-size: 18px;
+        }
+
+        .raw-call-log {
+            background: #010309;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .raw-call-log::-webkit-scrollbar { width: 4px; }
+        .raw-call-log::-webkit-scrollbar-track { background: transparent; }
+        .raw-call-log::-webkit-scrollbar-thumb { background: var(--border-hl); border-radius: 2px; }
+
+        .log-line {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-line .log-time { color: var(--text-dim); }
+        .log-line .log-ok   { color: var(--green); }
+        .log-line .log-err  { color: var(--red); }
+        .log-line .log-val  { color: var(--cyan); }
+
+        /* ── FOOTER ──────────────────────────────── */
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 2px;
+        }
+
+        .contract-block { display: flex; flex-direction: column; gap: 6px; }
+
+        .contract-tag {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .contract-addr {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--cyan);
+        }
+
+        .explorer-link {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--cyan);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .explorer-link:hover {
+            background: var(--cyan-dim);
+            border-color: var(--border-hl);
+        }
+
+        /* ── RESPONSIVE ──────────────────────────── */
+        @media (max-width: 900px) {
+            .hero, .two-col { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .score-number { font-size: 64px; }
+            .raw-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .score-number { font-size: 48px; }
+        }
+
+        /* Loading shimmer */
+        @keyframes shimmer {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.4; }
+        }
+        .shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <!-- ── HEADER ──────────────────────────────── -->
+    <header>
+        <div class="logo-block">
+            <h1>// Verifiable AI Oracle</h1>
+            <div class="tagline">On-Chain Risk Intelligence<br>for MATIC/USDC</div>
+        </div>
+        <div class="header-right">
+            <div class="network-pill">
+                <div class="dot loading" id="statusDot"></div>
+                <span id="networkLabel">Polygon Amoy — ChainID 80002</span>
+            </div>
+            <div class="refresh-info" id="refreshInfo">Connecting to blockchain...</div>
+        </div>
+    </header>
+
+    <!-- ── HERO: SCORE + SAFE ───────────────────── -->
+    <div class="hero">
+        <div class="score-panel">
+            <div class="score-label">// getRiskScore("MATIC/USDC")</div>
+            <div class="score-number loading shimmer" id="scoreNumber">—</div>
+            <div class="score-max">out of 10,000</div>
+            <div class="status-badge loading" id="statusBadge">CONNECTING</div>
+        </div>
+
+        <div class="safe-panel">
+            <div class="safe-label">// isSafe("MATIC/USDC")</div>
+
+            <div class="gauge-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <circle class="gauge-bg" cx="70" cy="70" r="60"/>
+                    <circle class="gauge-fill" id="gaugeFill" cx="70" cy="70" r="60"
+                        stroke="var(--cyan)"/>
+                </svg>
+                <div class="gauge-center">
+                    <div class="gauge-pct" id="gaugePct">—</div>
+                    <div class="gauge-sub">/ 10000</div>
+                </div>
+            </div>
+
+            <div class="safe-verdict loading shimmer" id="safeVerdict">—</div>
+            <div class="score-label" style="margin-bottom:0">Threshold: &lt; 7,000 = SAFE</div>
+        </div>
+    </div>
+
+    <!-- ── STATS ────────────────────────────────── -->
+    <div class="stats-row">
+        <div class="stat">
+            <div class="stat-lbl">Risk Score</div>
+            <div class="stat-val" id="s1">—</div>
+            <div class="stat-sub">Raw (0–10,000)</div>
+        </div>
+        <div class="stat">
+            <div class="stat-lbl">Risk %</div>
+            <div class="stat-val" id="s2">—</div>
+            <div class="stat-sub">Normalized</div>
+        </div>
+        <div class="stat">
+            <div class="stat-lbl">Last Block Read</div>
+            <div class="stat-val" id="s3" style="font-size:18px">—</div>
+            <div class="stat-sub">Block number</div>
+        </div>
+        <div class="stat">
+            <div class="stat-lbl">Next Refresh</div>
+            <div class="stat-val" id="s4">15s</div>
+            <div class="stat-sub">Auto-polling</div>
+        </div>
+    </div>
+
+    <!-- ── CHART ────────────────────────────────── -->
+    <div class="chart-panel">
+        <div class="panel-title">Risk Score History (live readings)</div>
+        <div class="chart-box">
+            <canvas id="riskChart"></canvas>
+        </div>
+    </div>
+
+    <!-- ── FEED + DEFI ───────────────────────────── -->
+    <div class="two-col">
+        <div class="feed-panel">
+            <div class="panel-title">Live Blockchain Readings</div>
+            <div id="feedContainer">
+                <div class="feed-item">
+                    <div>
+                        <div class="feed-ts">—</div>
+                        <div class="feed-desc">Awaiting first blockchain read...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="defi-panel">
+            <div class="panel-title">DeFi Gate Status</div>
+            <div class="defi-grid">
+                <div class="defi-card">
+                    <div class="defi-card-label">Liquidation Gate</div>
+                    <div class="defi-val closed" id="defiLiquidation">—</div>
+                </div>
+                <div class="defi-card">
+                    <div class="defi-card-label">Borrow Gate</div>
+                    <div class="defi-val closed" id="defiBorrow">—</div>
+                </div>
+                <div class="defi-card">
+                    <div class="defi-card-label">Trading Gate</div>
+                    <div class="defi-val closed" id="defiTrading">—</div>
+                </div>
+                <div class="defi-card">
+                    <div class="defi-card-label">Collateral Gate</div>
+                    <div class="defi-val closed" id="defiCollateral">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RAW CONTRACT DATA ─────────────────────── -->
+    <div class="raw-panel">
+        <div class="panel-title">Raw Contract Data</div>
+
+        <div class="raw-grid">
+            <div class="raw-field">
+                <div class="raw-field-label">Contract Address</div>
+                <div class="raw-field-value">0x4957Bb834169De7721cC87622FB9cFf839cC6201</div>
+            </div>
+            <div class="raw-field">
+                <div class="raw-field-label">Network</div>
+                <div class="raw-field-value">Polygon Amoy Testnet (ChainID: 80002)</div>
+            </div>
+            <div class="raw-field">
+                <div class="raw-field-label">getRiskScore("MATIC/USDC") → uint256</div>
+                <div class="raw-field-value highlight" id="rawScore">Fetching...</div>
+            </div>
+            <div class="raw-field">
+                <div class="raw-field-label">isSafe("MATIC/USDC") → bool</div>
+                <div class="raw-field-value highlight" id="rawSafe">Fetching...</div>
+            </div>
+            <div class="raw-field">
+                <div class="raw-field-label">RPC Endpoint</div>
+                <div class="raw-field-value">https://rpc-amoy.polygon.technology</div>
+            </div>
+            <div class="raw-field">
+                <div class="raw-field-label">Last Successful Read</div>
+                <div class="raw-field-value" id="rawLastRead">—</div>
+            </div>
+        </div>
+
+        <div class="raw-field-label" style="margin-bottom:8px">RPC Call Log</div>
+        <div class="raw-call-log" id="callLog">
+            <div class="log-line"><span class="log-time">[INIT]</span> Initializing ethers.js provider...</div>
+        </div>
+    </div>
+
+    <!-- ── FOOTER ────────────────────────────────── -->
+    <footer>
+        <div class="contract-block">
+            <div class="contract-tag">Smart Contract</div>
+            <div class="contract-addr">0x4957Bb834169De7721cC87622FB9cFf839cC6201</div>
+        </div>
+        <a href="https://amoy.polygonscan.com/address/0x4957Bb834169De7721cC87622FB9cFf839cC6201"
+           target="_blank" class="explorer-link">View on PolygonScan →</a>
+    </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  BLOCKCHAIN CONFIG
+// ═══════════════════════════════════════════════════
+const CONTRACT_ADDRESS = "0x4957Bb834169De7721cC87622FB9cFf839cC6201";
+const RPC_URL          = "https://rpc-amoy.polygon.technology";
+const ASSET            = "MATIC/USDC";
+const REFRESH_INTERVAL = 15; // seconds
+const SAFE_THRESHOLD   = 7000;
+
+// Minimal ABI — only the two functions we need
+const ABI = [
+    "function getRiskScore(string memory asset) external view returns (uint256)",
+    "function isSafe(string memory asset) external view returns (bool)"
+];
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let provider, contract;
+let scoreHistory  = [];
+let timeHistory   = [];
+let feedHistory   = [];
+let countdown     = REFRESH_INTERVAL;
+let countdownTimer;
+let riskChart;
+let totalReads    = 0;
+
+// ═══════════════════════════════════════════════════
+//  LOGGING
+// ═══════════════════════════════════════════════════
+function log(msg, type = 'info') {
+    const el  = document.getElementById('callLog');
+    const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-val';
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `<span class="log-time">[${now}]</span> <span class="${cls}">${msg}</span>`;
+    el.prepend(line);
+    // Keep max 50 lines
+    while (el.children.length > 50) el.removeChild(el.lastChild);
+}
+
+// ═══════════════════════════════════════════════════
+//  CHART INIT
+// ═══════════════════════════════════════════════════
+function initChart() {
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    riskChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Risk Score',
+                data: [],
+                borderColor: '#00d2ff',
+                backgroundColor: 'rgba(0,210,255,0.06)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#00d2ff',
+                pointBorderColor: '#08101a',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 600 },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    padding: 12,
+                    titleColor: '#00d2ff',
+                    bodyColor: '#c8d8e8',
+                    borderColor: 'rgba(0,210,255,0.3)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: c => `Score: ${c.parsed.y} / 10000`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0, max: 10000,
+                    grid: { color: 'rgba(0,210,255,0.06)', drawBorder: false },
+                    ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 } }
+                },
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 } }
+                }
+            }
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════════
+//  RISK CLASSIFICATION
+// ═══════════════════════════════════════════════════
+function classify(score) {
+    if (score < 4000) return { cls: 'safe',   label: 'LOW RISK',    color: 'var(--green)' };
+    if (score < 7000) return { cls: 'medium', label: 'MEDIUM RISK', color: 'var(--yellow)' };
+    return                   { cls: 'danger', label: 'HIGH RISK',   color: 'var(--red)' };
+}
+
+// ═══════════════════════════════════════════════════
+//  UPDATE UI
+// ═══════════════════════════════════════════════════
+function updateUI(score, safe, blockNum) {
+    const pct   = ((score / 10000) * 100).toFixed(1);
+    const info  = classify(score);
+    const now   = new Date();
+    const ts    = now.toLocaleTimeString('en-US', { hour12: false });
+
+    // Score panel
+    const scoreEl = document.getElementById('scoreNumber');
+    scoreEl.textContent = score.toLocaleString();
+    scoreEl.className = `score-number ${info.cls}`;
+    scoreEl.classList.remove('shimmer');
+
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = info.label;
+    badge.className = `status-badge ${info.cls}`;
+
+    // Safe panel
+    const verdictEl = document.getElementById('safeVerdict');
+    verdictEl.textContent = safe ? 'SAFE ✓' : 'UNSAFE ✗';
+    verdictEl.className   = `safe-verdict ${safe ? 'yes' : 'no'}`;
+    verdictEl.classList.remove('shimmer');
+
+    // Gauge
+    const circumference = 377;
+    const offset = circumference - (score / 10000) * circumference;
+    const gauge  = document.getElementById('gaugeFill');
+    gauge.style.strokeDashoffset = offset;
+    gauge.style.stroke = info.color;
+    document.getElementById('gaugePct').textContent = score.toLocaleString();
+
+    // Stats
+    document.getElementById('s1').textContent = score.toLocaleString();
+    document.getElementById('s2').textContent = pct + '%';
+    document.getElementById('s3').textContent = blockNum ? '#' + blockNum.toLocaleString() : '—';
+
+    // Raw data
+    document.getElementById('rawScore').textContent = score.toString();
+    document.getElementById('rawSafe').textContent  = safe.toString();
+    document.getElementById('rawLastRead').textContent = now.toLocaleString();
+
+    // DeFi gates (logic based on score)
+    const setGate = (id, open) => {
+        const el = document.getElementById(id);
+        el.textContent = open ? 'OPEN' : 'CLOSED';
+        el.className   = `defi-val ${open ? 'open' : 'closed'}`;
+    };
+    setGate('defiLiquidation', score < 8000);
+    setGate('defiBorrow',      score < 6000);
+    setGate('defiTrading',     score < 7000);
+    setGate('defiCollateral',  score < 5000);
+
+    // History
+    scoreHistory.push(score);
+    timeHistory.push(ts);
+    if (scoreHistory.length > 20) {
+        scoreHistory.shift();
+        timeHistory.shift();
+    }
+
+    // Chart
+    riskChart.data.labels   = timeHistory;
+    riskChart.data.datasets[0].data = scoreHistory;
+    riskChart.update();
+
+    // Feed
+    feedHistory.unshift({ ts, score, safe });
+    if (feedHistory.length > 8) feedHistory.pop();
+    const feedEl = document.getElementById('feedContainer');
+    feedEl.innerHTML = feedHistory.map(f => `
+        <div class="feed-item">
+            <div>
+                <div class="feed-ts">${f.ts}</div>
+                <div class="feed-desc">Blockchain read — asset: ${ASSET}</div>
+            </div>
+            <div class="feed-score">${f.score.toLocaleString()}</div>
+        </div>
+    `).join('');
+
+    // Status dot
+    document.getElementById('statusDot').className = 'dot';
+    document.getElementById('refreshInfo').textContent =
+        `Last read: ${ts} • Auto-refresh every ${REFRESH_INTERVAL}s`;
+
+    totalReads++;
+}
+
+// ═══════════════════════════════════════════════════
+//  FETCH FROM BLOCKCHAIN
+// ═══════════════════════════════════════════════════
+async function fetchFromChain() {
+    document.getElementById('statusDot').className = 'dot loading';
+    log(`Calling getRiskScore("${ASSET}") on contract...`);
+
+    try {
+        // Both calls in parallel
+        const [score, safe, block] = await Promise.all([
+            contract.getRiskScore(ASSET),
+            contract.isSafe(ASSET),
+            provider.getBlockNumber()
+        ]);
+
+        const scoreNum = score.toNumber();
+        log(`getRiskScore → ${scoreNum}`, 'ok');
+        log(`isSafe       → ${safe}`, 'ok');
+        log(`Block number → ${block}`, 'val');
+
+        updateUI(scoreNum, safe, block);
+
+    } catch (err) {
+        document.getElementById('statusDot').className = 'dot error';
+        log(`ERROR: ${err.message}`, 'err');
+        document.getElementById('refreshInfo').textContent =
+            `⚠ Read failed — retrying in ${REFRESH_INTERVAL}s`;
+
+        // Show error state
+        document.getElementById('rawScore').textContent = 'Error — see log';
+        document.getElementById('rawSafe').textContent  = 'Error — see log';
+
+        // If score is 0 (contract not yet updated), show 0 gracefully
+        if (err.message.includes('call revert') || err.message.includes('BAD_DATA')) {
+            log('Score may be 0 — contract score not yet submitted', 'val');
+            updateUI(0, true, null);
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  COUNTDOWN TIMER
+// ═══════════════════════════════════════════════════
+function startCountdown() {
+    countdown = REFRESH_INTERVAL;
+    clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+        countdown--;
+        document.getElementById('s4').textContent = countdown + 's';
+        if (countdown <= 0) {
+            countdown = REFRESH_INTERVAL;
+            fetchFromChain();
+        }
+    }, 1000);
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+async function init() {
+    log('Initializing ethers.js v5 provider...');
+    log(`RPC: ${RPC_URL}`);
+
+    try {
+        provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+        log(`Contract: ${CONTRACT_ADDRESS}`, 'ok');
+        log(`Asset: "${ASSET}"`, 'val');
+
+        // First fetch immediately
+        await fetchFromChain();
+
+        // Then every 15 seconds
+        startCountdown();
+
+    } catch (err) {
+        log(`INIT FAILED: ${err.message}`, 'err');
+        document.getElementById('statusDot').className = 'dot error';
+        document.getElementById('refreshInfo').textContent = '⚠ Connection failed';
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    init();
+});
+</script>
+</body>
+</html>

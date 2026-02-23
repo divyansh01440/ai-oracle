@@ -1,0 +1,24 @@
+# ── Private keys — NEVER commit ──────────────────────────────
+contracts/.env
+.env
+
+# ── Large model/data files ────────────────────────────────────
+oracle_model.pth
+oracle_model_simple.pkl
+scaler.pkl
+training_data.csv
+
+# ── Python cache ──────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.last_score
+
+# ── Node / Hardhat ────────────────────────────────────────────
+contracts/node_modules/
+contracts/artifacts/
+contracts/cache/
+node_modules/
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log

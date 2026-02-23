@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitepaper — AI Docal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#020408;--panel:#07090f;
+            --border:rgba(0,220,255,.10);--bhl:rgba(0,220,255,.30);
+            --c:#00dcff;--cdim:rgba(0,220,255,.08);
+            --green:#00ffaa;--yellow:#ffd966;--red:#ff4060;
+            --text:#b8cdd8;--dim:#3a4a58;
+            --mono:'Space Mono',monospace;--head:'Syne',sans-serif;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:var(--head);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
+        body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,220,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,220,255,.025) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
+
+        /* NAV */
+        nav{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(2,4,8,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+        .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+        .logo-mark{width:34px;height:34px;border:1px solid var(--bhl);border-radius:3px;background:var(--cdim);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+        .logo-mark::before{content:'';position:absolute;width:14px;height:14px;border:1.5px solid var(--c);border-radius:50%;animation:spin 5s linear infinite}
+        .logo-mark::after{content:'';position:absolute;width:5px;height:5px;background:var(--c);border-radius:50%;box-shadow:0 0 6px var(--c)}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .logo-name{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px}
+        .logo-sub{font-family:var(--mono);font-size:8px;color:var(--c);text-transform:uppercase;letter-spacing:3px}
+        .back-btn{font-family:var(--mono);font-size:10px;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:2px;padding:7px 14px;border:1px solid var(--border);border-radius:2px;transition:all .2s}
+        .back-btn:hover{color:var(--c);border-color:var(--bhl);background:var(--cdim)}
+
+        /* HERO */
+        .wp-hero{position:relative;z-index:1;padding:110px 48px 60px;max-width:1280px;margin:0 auto;border-bottom:1px solid var(--border)}
+        .wp-eyebrow{font-family:var(--mono);font-size:9px;color:var(--c);text-transform:uppercase;letter-spacing:4px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+        .wp-eyebrow::before{content:'';width:28px;height:1px;background:var(--c)}
+        .wp-hero h1{font-family:var(--head);font-size:clamp(36px,5vw,64px);font-weight:800;color:#fff;line-height:1.05;margin-bottom:24px}
+        .wp-hero h1 span{color:var(--c)}
+        .wp-meta{display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--border);overflow:hidden;width:fit-content}
+        .wp-meta-i{font-family:var(--mono);font-size:10px;color:var(--dim);padding:10px 20px;border-right:1px solid var(--border);background:var(--panel)}
+        .wp-meta-i:last-child{border-right:none}
+
+        /* LAYOUT */
+        .wp-body{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:48px 48px 80px;display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
+
+        /* SIDEBAR — always vertical, never horizontal */
+        .toc{
+            position:sticky;top:80px;
+            background:var(--panel);
+            border:1px solid var(--border);
+            display:flex !important;
+            flex-direction:column !important;
+            flex-wrap:nowrap !important;
+            width:220px;
+            min-width:220px;
+        }
+        .toc-head{
+            font-family:var(--mono);font-size:9px;color:var(--dim);
+            text-transform:uppercase;letter-spacing:2px;
+            padding:16px 20px;
+            border-bottom:1px solid var(--border);
+            flex-shrink:0;
+        }
+        .toc a{
+            display:block;
+            font-family:var(--mono);font-size:10px;color:var(--dim);
+            text-decoration:none;
+            padding:10px 20px;
+            border-left:2px solid transparent;
+            transition:all .2s;
+            white-space:nowrap;
+            flex-shrink:0;
+        }
+        .toc a:hover,.toc a.on{color:var(--c);border-left-color:var(--c);background:var(--cdim)}
+
+        /* BLOCKS */
+        .wp-blocks{display:flex;flex-direction:column;gap:2px}
+        .blk{background:var(--panel);border:1px solid var(--border);padding:44px;scroll-margin-top:80px;transition:border-color .3s}
+        .blk:hover{border-color:rgba(0,220,255,.2)}
+        .blk-num{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px}
+        .blk-title{font-family:var(--head);font-size:24px;font-weight:800;color:var(--c);margin-bottom:24px;line-height:1.1}
+        .blk p{font-size:13.5px;color:var(--dim);line-height:1.9;margin-bottom:14px}
+        .blk p:last-child{margin-bottom:0}
+        .blk p strong{color:var(--text)}
+        .blk ul{list-style:none;margin:12px 0}
+        .blk ul li{font-size:13px;color:var(--dim);padding:8px 0 8px 22px;border-bottom:1px solid var(--border);position:relative;line-height:1.65}
+        .blk ul li:last-child{border-bottom:none}
+        .blk ul li::before{content:'//';position:absolute;left:0;font-family:var(--mono);font-size:9px;color:var(--c)}
+        .blk ul li strong{color:var(--text)}
+
+        /* Feature table */
+        .feat-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:12px}
+        .feat-table th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--dim);padding:10px 14px;border-bottom:1px solid var(--bhl);text-align:left;background:rgba(0,0,0,.3)}
+        .feat-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--dim);vertical-align:top}
+        .feat-table td:first-child{font-family:var(--mono);font-size:11px;color:var(--c);white-space:nowrap}
+        .feat-table tr:last-child td{border-bottom:none}
+        .feat-table tr:hover td{background:rgba(0,220,255,.03)}
+
+        /* Code block */
+        .code{background:#010308;border:1px solid var(--border);padding:22px;margin:18px 0;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.9;overflow-x:auto;border-radius:2px}
+        .kw{color:var(--c)}.str{color:var(--green)}.cmt{color:var(--dim);font-style:italic}.num{color:var(--yellow)}
+
+        /* Timeline */
+        .tl{display:flex;flex-direction:column;margin-top:16px}
+        .tl-row{display:flex;gap:18px;padding:18px 0;border-bottom:1px solid var(--border)}
+        .tl-row:last-child{border-bottom:none}
+        .tl-d{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+        .done{background:var(--green);box-shadow:0 0 8px rgba(0,255,170,.4)}
+        .active{background:var(--c);box-shadow:0 0 8px rgba(0,220,255,.4)}
+        .soon{background:var(--yellow)}
+        .future{background:var(--dim)}
+        .tl-phase{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;margin-bottom:5px}
+        .tl-desc{font-size:13px;color:var(--dim);line-height:1.6}
+
+        /* Footer */
+        footer{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:36px 48px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+        .foot-l{font-family:var(--mono);font-size:9px;color:var(--dim)}
+        .foot-links{display:flex;gap:20px}
+        .foot-links a{font-family:var(--mono);font-size:10px;color:var(--dim);text-decoration:none;transition:color .2s}
+        .foot-links a:hover{color:var(--c)}
+
+        @media(max-width:1100px){
+            .wp-body{grid-template-columns:180px 1fr;padding:36px 24px 60px;gap:24px}
+            .toc{min-width:180px;width:180px}
+        }
+        @media(max-width:760px){
+            nav{padding:0 16px}
+            .wp-hero{padding:100px 16px 36px}
+            .wp-body{grid-template-columns:1fr;padding:20px 16px 60px}
+            .toc{position:static;width:100%;min-width:unset}
+            .blk{padding:24px 20px}
+            footer{padding:24px 16px;flex-direction:column;align-items:flex-start}
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="logo">
+        <div class="logo-mark"></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+            <div class="logo-name">Nirvanatechon</div>
+            <div class="logo-sub">AI Docal</div>
+        </div>
+    </a>
+    <a href="index.html" class="back-btn">← Back</a>
+</nav>
+
+<div class="wp-hero">
+    <div class="wp-eyebrow">Technical Whitepaper</div>
+    <h1><span>AI Docal</span> — Verifiable<br>AI Oracle Protocol</h1>
+    <div class="wp-meta">
+        <div class="wp-meta-i">v1.0</div>
+        <div class="wp-meta-i">Nirvanatechon</div>
+        <div class="wp-meta-i">Polygon Amoy</div>
+        <div class="wp-meta-i">February 2026</div>
+    </div>
+</div>
+
+<div class="wp-body">
+
+    <!-- TOC -->
+    <nav class="toc">
+        <div class="toc-head">Contents</div>
+        <a href="#abstract"  class="on">§1 Abstract</a>
+        <a href="#problem"      >§2 The Problem</a>
+        <a href="#solution"     >§3 Solution</a>
+        <a href="#architecture" >§4 Architecture</a>
+        <a href="#model"        >§5 AI Model</a>
+        <a href="#contract"     >§6 Smart Contract</a>
+        <a href="#defi"         >§7 DeFi Integration</a>
+        <a href="#roadmap"      >§8 Roadmap</a>
+    </nav>
+
+    <!-- BLOCKS -->
+    <div class="wp-blocks">
+
+        <div class="blk" id="abstract">
+            <div class="blk-num">Section 01</div>
+            <div class="blk-title">Abstract</div>
+            <p>AI Docal is a verifiable AI oracle that detects cryptocurrency price manipulation in real time and publishes risk scores directly to the Polygon blockchain. Unlike traditional oracles that relay only price data, AI Docal provides an <strong>intelligence layer</strong> — a trained neural network whose outputs are permanently on-chain and auditable by anyone.</p>
+            <p>The protocol monitors 11 market microstructure features continuously, producing a tamper-evident risk score (0–10,000) that any DeFi protocol can integrate directly into smart contract logic via two free read functions. The full stack — data pipeline, AI model, REST API, smart contract, and dashboard — is open-source and built on free public infrastructure.</p>
+        </div>
+
+        <div class="blk" id="problem">
+            <div class="blk-num">Section 02</div>
+            <div class="blk-title">The Problem</div>
+            <p>Price manipulation causes billions in DeFi losses annually. Spoofing, wash trading, and flash loan attacks exploit the fact that automated protocols execute on price alone — with no awareness of whether that price is genuine.</p>
+            <ul>
+                <li><strong>Liquidation cascades</strong> — Manipulated prices trigger liquidation engines, creating bad debt and destabilizing protocols</li>
+                <li><strong>Over-collateralization exploits</strong> — Temporarily inflated collateral lets attackers borrow far beyond real asset value</li>
+                <li><strong>AMM impermanent loss</strong> — Market makers lose value to arbitrageurs engineered by manipulation</li>
+                <li><strong>Flash loan attacks</strong> — Single-block price manipulation drains protocol treasuries</li>
+                <li><strong>Settlement manipulation</strong> — Options protocols settle at artificial prices, causing losses for all parties</li>
+            </ul>
+            <p>Existing oracles (Chainlink, Pyth) provide accurate price feeds but do not assess whether prices reflect genuine market activity. A price can be technically correct and still be the product of coordinated manipulation — a distinction no current oracle addresses.</p>
+        </div>
+
+        <div class="blk" id="solution">
+            <div class="blk-num">Section 03</div>
+            <div class="blk-title">Solution</div>
+            <p>AI Docal introduces a second-layer oracle that runs alongside price oracles. Rather than replacing price feeds, it provides a continuous manipulation risk signal that DeFi protocols use to gate critical operations.</p>
+            <p>The core insight: manipulation leaves detectable fingerprints in <strong>market microstructure</strong> — patterns in volume, trade size distribution, price-volume ratios, and taker imbalance that differ measurably from organic activity. A trained neural network identifies these patterns in under 1ms.</p>
+            <div class="code">
+<span class="cmt">// Minimal Solidity integration</span>
+<span class="kw">interface</span> IAIDocal {
+    <span class="kw">function</span> isSafe(<span class="kw">string memory</span> asset) <span class="kw">external view returns</span> (<span class="kw">bool</span>);
+    <span class="kw">function</span> getRiskScore(<span class="kw">string memory</span> asset) <span class="kw">external view returns</span> (<span class="kw">uint256</span>);
+}
+
+<span class="kw">modifier</span> safeMarket(<span class="kw">string memory</span> asset) {
+    <span class="kw">require</span>(
+        IAIDocal(<span class="str">0x4957Bb834169De7721cC87622FB9cFf839cC6201</span>).isSafe(asset),
+        <span class="str">"AI Docal: manipulation detected"</span>
+    );
+    _;
+}</div>
+        </div>
+
+        <div class="blk" id="architecture">
+            <div class="blk-num">Section 04</div>
+            <div class="blk-title">System Architecture</div>
+            <p>The stack operates as a continuous loop across six components:</p>
+            <ul>
+                <li><strong>data_pipeline.py</strong> — Fetches 500 MATIC/USDT 1-minute candles from Binance's free API, computes 11 features, generates adaptive manipulation labels, saves training data</li>
+                <li><strong>train.py</strong> — Trains a PyTorch neural network (11→32→16→1) on labeled data; exports oracle_model.pth and scikit-learn fallback</li>
+                <li><strong>submit_score.py</strong> — Fetches live candles, runs inference, scales probability to 0–10,000, calls submitRiskScore() via web3.py</li>
+                <li><strong>OracleContract.sol</strong> — Solidity contract on Polygon; stores scores on-chain, emits events, exposes public read functions</li>
+                <li><strong>api.py</strong> — Flask server bridging the AI model to web apps via GET /score and GET /health</li>
+                <li><strong>dashboard.html</strong> — Reads blockchain scores directly with ethers.js every 15 seconds; no backend required</li>
+            </ul>
+        </div>
+
+        <div class="blk" id="model">
+            <div class="blk-num">Section 05</div>
+            <div class="blk-title">AI Model Design</div>
+            <p>Architecture: <strong>11 → 32 → 16 → 1</strong> with ReLU activations, 20% dropout, and sigmoid output. Trained with Adam optimizer (lr=1e-3, weight decay=1e-4) for 500 epochs with step LR scheduling. Best validation weights are saved automatically.</p>
+            <p>The 11 input features each capture a distinct dimension of market microstructure:</p>
+            <table class="feat-table">
+                <thead><tr><th>Feature</th><th>Formula</th><th>Detects</th></tr></thead>
+                <tbody>
+                    <tr><td>price_range</td><td>(high − low) / close</td><td>Intra-candle volatility amplitude</td></tr>
+                    <tr><td>price_change</td><td>(close − open) / open</td><td>Directional momentum</td></tr>
+                    <tr><td>volatility_5</td><td>std(returns, 5 bars)</td><td>Short-term noise regime</td></tr>
+                    <tr><td>volatility_20</td><td>std(returns, 20 bars)</td><td>Market volatility regime</td></tr>
+                    <tr><td>volume_change</td><td>vol / vol[-1] − 1</td><td>Sudden volume spikes</td></tr>
+                    <tr><td>volume_ma_ratio</td><td>vol / MA(vol, 20)</td><td>Anomalous volume vs baseline</td></tr>
+                    <tr><td>taker_ratio</td><td>taker_buy / total_vol</td><td>Aggressor side imbalance</td></tr>
+                    <tr><td>avg_trade_size</td><td>vol / num_trades</td><td>Institutional vs retail footprint</td></tr>
+                    <tr><td>trade_intensity</td><td>trades / MA(trades, 20)</td><td>Unusual trading activity</td></tr>
+                    <tr><td>high_low_ratio</td><td>high / low</td><td>Wick analysis, stop-hunts</td></tr>
+                    <tr><td>close_open_ratio</td><td>close / open</td><td>Candle body direction & size</td></tr>
+                </tbody>
+            </table>
+            <p>Labels use <strong>adaptive percentile thresholds</strong> rather than fixed values — ensuring the model always trains on meaningful positives regardless of market volatility regime.</p>
+        </div>
+
+        <div class="blk" id="contract">
+            <div class="blk-num">Section 06</div>
+            <div class="blk-title">Smart Contract</div>
+            <p>Deployed at <code style="color:var(--c);font-family:var(--mono);font-size:11px">0x4957Bb834169De7721cC87622FB9cFf839cC6201</code> on Polygon Amoy (ChainID: 80002). Compiled with Solidity 0.8.20, deployed via Hardhat.</p>
+            <div class="code">
+<span class="cmt">// Read functions — zero gas cost for callers</span>
+<span class="kw">function</span> getRiskScore(asset) → <span class="kw">uint256</span>    <span class="cmt">// 0–10,000</span>
+<span class="kw">function</span> isSafe(asset) → <span class="kw">bool</span>            <span class="cmt">// score &lt; 7,000</span>
+<span class="kw">function</span> getAssetInfo(asset) → (score, safe, updatedAt)
+<span class="kw">function</span> getLastUpdated(asset) → <span class="kw">uint256</span>  <span class="cmt">// unix timestamp</span>
+
+<span class="cmt">// Write — owner only</span>
+<span class="kw">function</span> submitRiskScore(asset, score) <span class="kw">onlyOwner</span>
+
+<span class="cmt">// Event — indexed for efficient log filtering</span>
+<span class="kw">event</span> RiskScoreUpdated(asset, score, timestamp, submitter)</div>
+            <p>The safe threshold of <strong>7,000 / 10,000</strong> represents the empirical boundary beyond which market microstructure deviates significantly from organic patterns. Input validation prevents scores exceeding 10,000 and empty asset strings.</p>
+        </div>
+
+        <div class="blk" id="defi">
+            <div class="blk-num">Section 07</div>
+            <div class="blk-title">DeFi Integration</div>
+            <p>AI Docal is a composable primitive. Any Solidity contract on Polygon integrates it with a single view call. All reads are gas-free.</p>
+            <ul>
+                <li><strong>Lending Protocols</strong> — Gate liquidations at score &gt; 8,000; pause borrows at &gt; 7,000 to prevent manipulation-triggered cascades</li>
+                <li><strong>DEXes / AMMs</strong> — Increase swap fees or pause large trades during high-risk windows; reduces MEV extraction</li>
+                <li><strong>Yield Strategies</strong> — Pause rebalancing to avoid executing at adversarial prices</li>
+                <li><strong>Options Protocols</strong> — Require isSafe() == true before settlement; prevents forced settlement at artificial prices</li>
+                <li><strong>Stablecoins</strong> — Pause collateral minting when collateral assets show manipulation signals</li>
+            </ul>
+            <p>The recommended pattern is a <strong>Solidity modifier</strong> — makes it trivial to add and remove protection from individual functions without altering their business logic.</p>
+        </div>
+
+        <div class="blk" id="roadmap">
+            <div class="blk-num">Section 08</div>
+            <div class="blk-title">Roadmap</div>
+            <div class="tl">
+                <div class="tl-row">
+                    <div class="tl-d done"></div>
+                    <div>
+                        <div class="tl-phase" style="color:var(--green)">Phase 1 — Complete ✓</div>
+                        <div class="tl-desc">Data pipeline · PyTorch model · Polygon Amoy deployment · Live dashboard · Flask REST API · Wallet-connect landing page</div>
+                    </div>
+                </div>
+                <div class="tl-row">
+                    <div class="tl-d active"></div>
+                    <div>
+                        <div class="tl-phase" style="color:var(--c)">Phase 2 — In Progress</div>
+                        <div class="tl-desc">Automated submission loop · Multi-asset support (BTC, ETH, SOL) · Model retraining pipeline · Improved labeling methodology</div>
+                    </div>
+                </div>
+                <div class="tl-row">
+                    <div class="tl-d soon"></div>
+                    <div>
+                        <div class="tl-phase" style="color:var(--yellow)">Phase 3 — Planned</div>
+                        <div class="tl-desc">Polygon mainnet · First production DeFi integration · Decentralized model validation · Public API with rate limiting</div>
+                    </div>
+                </div>
+                <div class="tl-row">
+                    <div class="tl-d future"></div>
+                    <div>
+                        <div class="tl-phase">Phase 4 — Future</div>
+                        <div class="tl-desc">Multi-chain (Arbitrum, Base) · Governance token · DAO-controlled thresholds · ZK proof of model integrity</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    <div class="foot-l">© 2026 Nirvanatechon · AI Docal Whitepaper v1.0</div>
+    <div class="foot-links">
+        <a href="index.html">← Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="https://amoy.polygonscan.com/address/0x4957Bb834169De7721cC87622FB9cFf839cC6201" target="_blank">Contract ↗</a>
+        <a href="https://github.com/divyansh01440" target="_blank">GitHub ↗</a>
+    </div>
+</footer>
+
+<script>
+// Active TOC
+const secs = document.querySelectorAll('.blk[id]');
+const links = document.querySelectorAll('.toc a');
+const obs = new IntersectionObserver(es=>{
+    es.forEach(e=>{
+        if(e.isIntersecting){
+            links.forEach(l=>l.classList.remove('on'));
+            const l=document.querySelector(`.toc a[href="#${e.target.id}"]`);
+            if(l) l.classList.add('on');
+        }
+    });
+},{rootMargin:'-10% 0px -60% 0px'});
+secs.forEach(s=>obs.observe(s));
+
+// Fade blocks in
+const bs = document.querySelectorAll('.blk');
+const bio = new IntersectionObserver(es=>{
+    es.forEach(e=>{
+        if(e.isIntersecting){
+            e.target.style.opacity='1';
+            e.target.style.transform='none';
+            bio.unobserve(e.target);
+        }
+    });
+},{threshold:.05});
+bs.forEach(b=>{
+    b.style.opacity='0';
+    b.style.transform='translateY(14px)';
+    b.style.transition='opacity .45s ease, transform .45s ease';
+    bio.observe(b);
+});
+</script>
+</body>
+</html>
