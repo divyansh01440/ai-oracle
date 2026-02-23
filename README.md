@@ -42,11 +42,11 @@ DeFi protocols lose billions every year to price manipulation — spoofing, wash
 
 ## 🌐 Live Demo
 
-> **Dashboard:** [https://ai-oracle.vercel.app/dashboard.html](https://ai-oracle.vercel.app/dashboard.html)
+> 
 >
-> **Landing Page:** [https://ai-oracle.vercel.app](https://ai-oracle.vercel.app)
+> **Landing Page:** [https://ai-oracle-dun.vercel.app/](https://ai-oracle-dun.vercel.app/)
 >
-> **Whitepaper:** [https://ai-oracle.vercel.app/whitepaper.html](https://ai-oracle.vercel.app/whitepaper.html)
+> **Whitepaper:** [https://ai-oracle-dun.vercel.app/whitepaper.html](https://ai-oracle-dun.vercel.app/whitepaper.html)
 
 *Connect your MetaMask wallet on Polygon Amoy to access the live dashboard.*
 
