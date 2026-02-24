@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nirvanatechon — AI Docal</title>
+    <title>Nirvanatechon — AI Oracle</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,6 +15,7 @@
             --cdim:    rgba(0,220,255,0.08);
             --green:   #00ffaa;
             --yellow:  #ffd966;
+            --red:     #ff4057;
             --text:    #b8cdd8;
             --dim:     #3a4a58;
             --mono:    'Space Mono', monospace;
@@ -23,283 +24,137 @@
         *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
         html{scroll-behavior:smooth}
         body{font-family:var(--head);background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
-
-        /* grid bg */
         body::after{
             content:'';position:fixed;inset:0;
-            background-image:
-                linear-gradient(rgba(0,220,255,.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,220,255,.03) 1px, transparent 1px);
-            background-size:64px 64px;
-            pointer-events:none;z-index:0;
+            background-image:linear-gradient(rgba(0,220,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,220,255,.03) 1px,transparent 1px);
+            background-size:64px 64px;pointer-events:none;z-index:0;
         }
 
         /* ── NAV ─────────────────────────────────── */
         nav{
             position:fixed;top:0;left:0;right:0;z-index:200;
-            height:64px;
-            display:flex;align-items:center;justify-content:space-between;
+            height:64px;display:flex;align-items:center;justify-content:space-between;
             padding:0 48px;
-            background:rgba(2,4,8,.92);
-            backdrop-filter:blur(20px);
+            background:rgba(2,4,8,.92);backdrop-filter:blur(20px);
             border-bottom:1px solid var(--border);
         }
         .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
         .logo-mark{
-            width:34px;height:34px;
-            border:1px solid var(--bhl);
-            border-radius:3px;
-            background:var(--cdim);
-            display:flex;align-items:center;justify-content:center;
+            width:34px;height:34px;border:1px solid var(--bhl);border-radius:3px;
+            background:var(--cdim);display:flex;align-items:center;justify-content:center;
             position:relative;overflow:hidden;
         }
-        .logo-mark::before{
-            content:'';position:absolute;
-            width:14px;height:14px;
-            border:1.5px solid var(--c);
-            border-radius:50%;
-            animation:spin 5s linear infinite;
-        }
-        .logo-mark::after{
-            content:'';position:absolute;
-            width:5px;height:5px;
-            background:var(--c);border-radius:50%;
-            box-shadow:0 0 6px var(--c);
-        }
+        .logo-mark::before{content:'';position:absolute;width:14px;height:14px;border:1.5px solid var(--c);border-radius:50%;animation:spin 5s linear infinite;}
+        .logo-mark::after{content:'';position:absolute;width:5px;height:5px;background:var(--c);border-radius:50%;box-shadow:0 0 6px var(--c);}
         @keyframes spin{to{transform:rotate(360deg)}}
         .logo-words{display:flex;flex-direction:column;gap:1px}
         .logo-name{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px}
         .logo-sub{font-family:var(--mono);font-size:8px;color:var(--c);text-transform:uppercase;letter-spacing:3px}
         .nav-center{display:flex;gap:2px;list-style:none}
-        .nav-center a{
-            font-family:var(--mono);font-size:10px;color:var(--dim);
-            text-decoration:none;text-transform:uppercase;letter-spacing:2px;
-            padding:7px 14px;border-radius:2px;border:1px solid transparent;
-            transition:all .2s;
-        }
+        .nav-center a{font-family:var(--mono);font-size:10px;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:2px;padding:7px 14px;border-radius:2px;border:1px solid transparent;transition:all .2s;}
         .nav-center a:hover{color:var(--c);border-color:var(--border);background:var(--cdim)}
-        .btn-wlt{
-            font-family:var(--mono);font-size:10px;font-weight:700;
-            text-transform:uppercase;letter-spacing:2px;
-            color:var(--bg);background:var(--c);
-            border:none;cursor:pointer;
-            padding:9px 20px;border-radius:2px;
-            transition:all .2s;
-        }
+        .btn-wlt{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--bg);background:var(--c);border:none;cursor:pointer;padding:9px 20px;border-radius:2px;transition:all .2s;}
         .btn-wlt:hover{background:#33e5ff;box-shadow:0 0 20px rgba(0,220,255,.35)}
         .btn-wlt.on{background:var(--green);color:#020408}
 
         /* ── MODAL ────────────────────────────────── */
-        .overlay{
-            display:none;position:fixed;inset:0;z-index:500;
-            background:rgba(0,0,0,.75);backdrop-filter:blur(12px);
-            align-items:center;justify-content:center;
-        }
+        .overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.8);backdrop-filter:blur(14px);align-items:center;justify-content:center;}
         .overlay.show{display:flex}
         .modal{
-            background:var(--panel);
-            border:1px solid var(--bhl);
-            border-radius:4px;
-            padding:48px 44px 40px;
-            width:420px;max-width:92vw;
-            position:relative;
-            animation:mIn .3s ease both;
+            background:var(--panel);border:1px solid var(--bhl);border-radius:4px;
+            padding:52px 44px 44px;width:440px;max-width:92vw;
+            position:relative;animation:mIn .3s ease both;overflow:hidden;
         }
+        .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);}
         @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:none}}
-        .m-close{
-            position:absolute;top:14px;right:14px;
-            background:none;border:none;cursor:pointer;
-            font-family:var(--mono);font-size:16px;color:var(--dim);
-            transition:color .2s;line-height:1;padding:4px;
-        }
+        .m-close{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;font-family:var(--mono);font-size:16px;color:var(--dim);transition:color .2s;line-height:1;padding:4px;}
         .m-close:hover{color:var(--c)}
         .m-tag{font-family:var(--mono);font-size:9px;color:var(--c);text-transform:uppercase;letter-spacing:3px;margin-bottom:18px}
         .modal h2{font-family:var(--head);font-size:26px;font-weight:800;color:#fff;margin-bottom:10px}
         .modal p{font-size:13px;color:var(--dim);line-height:1.7;margin-bottom:32px}
+
         .m-status{
-            font-family:var(--mono);font-size:11px;
-            padding:10px 14px;border-radius:2px;
-            border:1px solid var(--border);
-            background:var(--cdim);color:var(--c);
-            margin-bottom:20px;
-            display:none;
+            font-family:var(--mono);font-size:11px;padding:11px 14px;border-radius:2px;
+            border:1px solid var(--border);background:var(--cdim);color:var(--c);
+            margin-bottom:20px;display:none;line-height:1.5;
         }
         .m-status.show{display:block}
-        .m-status.ok{background:rgba(0,255,170,.08);border-color:rgba(0,255,170,.25);color:var(--green)}
+        .m-status.err{background:rgba(255,64,87,.1);border-color:rgba(255,64,87,.3);color:var(--red);}
+        .m-status.ok{background:rgba(0,255,170,.08);border-color:rgba(0,255,170,.25);color:var(--green);}
+
         .btn-mm{
             width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
             font-family:var(--mono);font-size:11px;font-weight:700;
             text-transform:uppercase;letter-spacing:2px;
             color:var(--bg);background:var(--c);
-            border:none;cursor:pointer;
-            padding:15px;border-radius:2px;
+            border:none;cursor:pointer;padding:15px;border-radius:2px;
             transition:all .2s;margin-bottom:14px;
         }
         .btn-mm:hover{background:#33e5ff;box-shadow:0 0 24px rgba(0,220,255,.3)}
+        .btn-mm:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+
+        .m-divider{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+        .m-divider::before,.m-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+        .m-divider span{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;}
+
         .m-note{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center}
         .m-note a{color:var(--c);text-decoration:none}
         .m-note a:hover{text-decoration:underline}
 
+        .m-install{
+            display:none;
+            background:rgba(255,217,102,.06);border:1px solid rgba(255,217,102,.2);
+            border-radius:2px;padding:16px;margin-bottom:20px;
+        }
+        .m-install.show{display:block}
+        .m-install p{font-family:var(--mono);font-size:11px;color:var(--yellow);line-height:1.6;margin-bottom:0;}
+        .m-install a{color:var(--yellow);font-weight:700;}
+
         /* ── HERO ─────────────────────────────────── */
-        .hero{
-            position:relative;z-index:1;
-            min-height:100vh;
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            align-items:center;
-            gap:0;
-            max-width:1280px;margin:0 auto;
-            padding:100px 48px 80px;
-        }
-        .hero-left{}
-        .hero-tag{
-            font-family:var(--mono);font-size:9px;color:var(--c);
-            text-transform:uppercase;letter-spacing:4px;
-            margin-bottom:28px;
-            display:flex;align-items:center;gap:10px;
-            animation:up .6s ease both;
-        }
+        .hero{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:0;max-width:1280px;margin:0 auto;padding:100px 48px 80px;}
+        .hero-tag{font-family:var(--mono);font-size:9px;color:var(--c);text-transform:uppercase;letter-spacing:4px;margin-bottom:28px;display:flex;align-items:center;gap:10px;animation:up .6s ease both;}
         .hero-tag::before{content:'';width:28px;height:1px;background:var(--c)}
         @keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-        .hero h1{
-            font-family:var(--head);
-            font-size:clamp(44px,5.5vw,72px);
-            font-weight:800;
-            line-height:1.0;
-            color:#fff;
-            margin-bottom:24px;
-            animation:up .6s ease .1s both;
-        }
+        .hero h1{font-family:var(--head);font-size:clamp(44px,5.5vw,72px);font-weight:800;line-height:1.0;color:#fff;margin-bottom:24px;animation:up .6s ease .1s both;}
         .hero h1 em{color:var(--c);font-style:normal}
-        .hero-sub{
-            font-size:15px;color:var(--dim);line-height:1.75;
-            max-width:420px;margin-bottom:40px;
-            animation:up .6s ease .2s both;
-        }
+        .hero-sub{font-size:15px;color:var(--dim);line-height:1.75;max-width:420px;margin-bottom:40px;animation:up .6s ease .2s both;}
         .hero-btns{display:flex;gap:14px;flex-wrap:wrap;animation:up .6s ease .3s both}
-        .btn-a{
-            font-family:var(--mono);font-size:10px;font-weight:700;
-            text-transform:uppercase;letter-spacing:2px;
-            color:var(--bg);background:var(--c);
-            border:none;cursor:pointer;
-            padding:13px 26px;border-radius:2px;
-            text-decoration:none;display:inline-flex;align-items:center;gap:8px;
-            transition:all .2s;
-        }
+        .btn-a{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--bg);background:var(--c);border:none;cursor:pointer;padding:13px 26px;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s;}
         .btn-a:hover{background:#33e5ff;box-shadow:0 0 28px rgba(0,220,255,.4);transform:translateY(-2px)}
-        .btn-b{
-            font-family:var(--mono);font-size:10px;font-weight:700;
-            text-transform:uppercase;letter-spacing:2px;
-            color:var(--c);background:transparent;
-            border:1px solid var(--bhl);cursor:pointer;
-            padding:13px 26px;border-radius:2px;
-            text-decoration:none;display:inline-flex;align-items:center;gap:8px;
-            transition:all .2s;
-        }
+        .btn-b{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--c);background:transparent;border:1px solid var(--bhl);cursor:pointer;padding:13px 26px;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s;}
         .btn-b:hover{background:var(--cdim);transform:translateY(-2px)}
-
-        /* Hero visual */
-        .hero-right{
-            display:flex;align-items:center;justify-content:center;
-            animation:up .8s ease .3s both;
-        }
-        .hero-visual{
-            width:100%;max-width:480px;
-            aspect-ratio:1;
-            position:relative;
-        }
-        .hv-ring{
-            position:absolute;inset:0;
-            border:1px solid var(--border);
-            border-radius:50%;
-            animation:pulse 4s ease-in-out infinite;
-        }
+        .hero-right{display:flex;align-items:center;justify-content:center;animation:up .8s ease .3s both;}
+        .hero-visual{width:100%;max-width:480px;aspect-ratio:1;position:relative;}
+        .hv-ring{position:absolute;inset:0;border:1px solid var(--border);border-radius:50%;animation:pulse 4s ease-in-out infinite;}
         .hv-ring:nth-child(2){inset:12%;animation-delay:.6s}
         .hv-ring:nth-child(3){inset:24%;animation-delay:1.2s}
         @keyframes pulse{0%,100%{opacity:.3}50%{opacity:.8}}
-        .hv-center{
-            position:absolute;inset:0;
-            display:flex;flex-direction:column;
-            align-items:center;justify-content:center;
-            gap:8px;
-        }
+        .hv-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
         .hv-score{font-family:var(--mono);font-size:72px;font-weight:700;color:var(--green);line-height:1;text-shadow:0 0 40px rgba(0,255,170,.3)}
         .hv-label{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:3px}
-        .hv-badge{
-            font-family:var(--mono);font-size:11px;font-weight:700;
-            color:var(--green);
-            background:rgba(0,255,170,.08);
-            border:1px solid rgba(0,255,170,.2);
-            padding:6px 16px;border-radius:2px;letter-spacing:2px;
-        }
-        /* Orbiting dots */
-        .hv-orbit{
-            position:absolute;inset:0;
-            animation:orbit 12s linear infinite;
-        }
-        .hv-orbit::before{
-            content:'';position:absolute;
-            top:6%;left:50%;
-            width:8px;height:8px;
-            background:var(--c);border-radius:50%;
-            transform:translate(-50%,-50%);
-            box-shadow:0 0 10px var(--c);
-        }
+        .hv-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);background:rgba(0,255,170,.08);border:1px solid rgba(0,255,170,.2);padding:6px 16px;border-radius:2px;letter-spacing:2px;}
+        .hv-orbit{position:absolute;inset:0;animation:orbit 12s linear infinite;}
+        .hv-orbit::before{content:'';position:absolute;top:6%;left:50%;width:8px;height:8px;background:var(--c);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--c);}
         @keyframes orbit{to{transform:rotate(360deg)}}
-        .hv-orbit2{
-            position:absolute;inset:12%;
-            animation:orbit 8s linear infinite reverse;
-        }
-        .hv-orbit2::before{
-            content:'';position:absolute;
-            top:6%;left:50%;
-            width:5px;height:5px;
-            background:var(--yellow);border-radius:50%;
-            transform:translate(-50%,-50%);
-            box-shadow:0 0 8px var(--yellow);
-        }
+        .hv-orbit2{position:absolute;inset:12%;animation:orbit 8s linear infinite reverse;}
+        .hv-orbit2::before{content:'';position:absolute;top:6%;left:50%;width:5px;height:5px;background:var(--yellow);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--yellow);}
 
         /* ── STATS BAR ───────────────────────────── */
-        .stats-bar{
-            position:relative;z-index:1;
-            border-top:1px solid var(--border);
-            border-bottom:1px solid var(--border);
-            background:var(--panel);
-        }
-        .stats-inner{
-            max-width:1280px;margin:0 auto;
-            display:grid;grid-template-columns:repeat(4,1fr);
-        }
-        .stat{
-            padding:28px 36px;
-            border-right:1px solid var(--border);
-        }
+        .stats-bar{position:relative;z-index:1;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--panel);}
+        .stats-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);}
+        .stat{padding:28px 36px;border-right:1px solid var(--border);}
         .stat:last-child{border-right:none}
         .stat-n{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--c);margin-bottom:4px}
         .stat-l{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px}
 
         /* ── FEATURES ────────────────────────────── */
-        .section{
-            position:relative;z-index:1;
-            max-width:1280px;margin:0 auto;
-            padding:100px 48px;
-        }
+        .section{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:100px 48px;}
         .eyebrow{font-family:var(--mono);font-size:9px;color:var(--c);text-transform:uppercase;letter-spacing:4px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
         .eyebrow::before{content:'';width:28px;height:1px;background:var(--c)}
         .sec-h{font-family:var(--head);font-size:clamp(28px,3.5vw,46px);font-weight:800;color:#fff;margin-bottom:60px;line-height:1.1}
         .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
-        .feat{
-            background:var(--panel);
-            padding:36px 32px;
-            transition:background .25s;
-            position:relative;overflow:hidden;
-        }
-        .feat::after{
-            content:'';position:absolute;
-            top:0;left:0;right:0;height:2px;
-            background:linear-gradient(90deg,transparent,var(--c),transparent);
-            opacity:0;transition:opacity .3s;
-        }
+        .feat{background:var(--panel);padding:36px 32px;transition:background .25s;position:relative;overflow:hidden;}
+        .feat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:0;transition:opacity .3s;}
         .feat:hover{background:#0a0d16}
         .feat:hover::after{opacity:.5}
         .feat-i{font-size:24px;margin-bottom:20px}
@@ -334,12 +189,7 @@
         .foot-col ul li a{font-size:13px;color:var(--dim);text-decoration:none;transition:color .2s}
         .foot-col ul li a:hover{color:var(--c)}
         .socials{display:flex;gap:8px;margin-top:2px}
-        .soc{
-            width:36px;height:36px;
-            background:var(--panel);border:1px solid var(--border);
-            border-radius:2px;display:flex;align-items:center;justify-content:center;
-            text-decoration:none;transition:all .2s;
-        }
+        .soc{width:36px;height:36px;background:var(--panel);border:1px solid var(--border);border-radius:2px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .2s;}
         .soc:hover{border-color:var(--bhl);background:var(--cdim)}
         .soc svg{width:15px;height:15px;fill:var(--dim);transition:fill .2s}
         .soc:hover svg{fill:var(--c)}
@@ -376,22 +226,50 @@
 </head>
 <body>
 
-<!-- MODAL -->
+<!-- ═══════════════════════════════════════════════
+     WALLET MODAL
+     ═══════════════════════════════════════════════ -->
 <div class="overlay" id="modal">
   <div class="modal">
-    <button class="m-close" onclick="closeModal()">✕</button>
-    <div class="m-tag">// Connect to AI Docal</div>
+    <button class="m-close" onclick="closeModal()" aria-label="Close">✕</button>
+    <div class="m-tag">// Verifiable AI Oracle</div>
     <h2>Connect Wallet</h2>
-    <p>Connect MetaMask to access the live dashboard on Polygon Amoy.</p>
+    <p>Connect MetaMask to access the live on-chain risk dashboard on Polygon Amoy.</p>
+
+    <!-- Shown automatically when MetaMask is not installed -->
+    <div class="m-install" id="mInstall">
+      <p>⚠ MetaMask not detected.<br>
+      Please <a href="https://metamask.io/download/" target="_blank">install MetaMask →</a> then refresh this page to continue.</p>
+    </div>
+
+    <!-- Status line: connecting / errors / success -->
     <div class="m-status" id="mStatus"></div>
+
+    <!-- Connect MetaMask button -->
     <button class="btn-mm" id="mmBtn" onclick="connectAndGo()">
       <svg width="20" height="20" viewBox="0 0 318 318" fill="none">
-        <path d="M274.1 35.5L174.6 109.4l19.1-45.2 80.4-28.7z" fill="#E2761B"/>
-        <path d="M43.9 35.5l98.6 74.6-18.2-45.9L43.9 35.5z" fill="#E4761B"/>
+        <path d="M274.1 35.5L174.6 109.4L193 65Z" fill="#E2761B" stroke="#E2761B" stroke-width="0.5"/>
+        <path d="M44.4 35.5L143.1 110.1L125.6 65Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M238.3 206.8L211.8 247.4L268.5 263L285 207.7Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M33.6 207.7L50 263L106.8 247.4L80.3 206.8Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M103.6 138.2L87.8 162L144.1 164.6L142.1 104Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M214.9 138.2L175.2 103.3L174.6 164.6L230.8 162Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M106.8 247.4L140.6 230.9L111.4 208.1Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
+        <path d="M177.9 230.9L211.8 247.4L207.1 208.1Z" fill="#E4761B" stroke="#E4761B" stroke-width="0.5"/>
       </svg>
       Connect MetaMask
     </button>
-    <div class="m-note">No MetaMask? <a href="https://metamask.io" target="_blank">Download here →</a></div>
+
+    <div class="m-divider"><span>or</span></div>
+
+    <!-- Read-only: explicit labelled choice -->
+    <button class="btn-mm" id="roBtn"
+      style="background:transparent;color:var(--c);border:1px solid var(--bhl);margin-bottom:20px;"
+      onclick="goReadOnly()">
+      👁 View Read-Only (no wallet)
+    </button>
+
+    <div class="m-note">Need MetaMask? <a href="https://metamask.io/download/" target="_blank">Download here →</a></div>
   </div>
 </div>
 
@@ -401,10 +279,11 @@
     <div class="logo-mark"></div>
     <div class="logo-words">
       <div class="logo-name">Nirvanatechon</div>
-      <div class="logo-sub">AI Docal</div>
+      <div class="logo-sub">AI Oracle</div>
     </div>
   </a>
   <ul class="nav-center">
+    <!-- FIX: All dashboard links now go through openDash() gate check -->
     <li><a href="#" onclick="openDash(event)">Dashboard</a></li>
     <li><a href="whitepaper.html">Whitepaper</a></li>
   </ul>
@@ -418,9 +297,10 @@
   <div class="hero-left">
     <div class="hero-tag">Verifiable AI Oracle · Polygon Amoy</div>
     <h1>Detect<br><em>Manipulation.</em><br>On-Chain.</h1>
-    <p class="hero-sub">AI Docal writes real-time manipulation risk scores to the blockchain — so any DeFi protocol can read them trustlessly.</p>
+    <p class="hero-sub">AI Oracle writes real-time manipulation risk scores to the blockchain — so any DeFi protocol can read them trustlessly.</p>
     <div class="hero-btns">
-      <button class="btn-a" onclick="openModal()">Launch Dashboard →</button>
+      <!-- FIX: Hero button now uses openDash() — same gate as nav link -->
+      <button class="btn-a" onclick="openDash(event)">Launch Dashboard →</button>
       <a href="whitepaper.html" class="btn-b">Read Whitepaper</a>
     </div>
   </div>
@@ -494,7 +374,7 @@
   </div>
 </section>
 
-<!-- HOW -->
+<!-- HOW IT WORKS -->
 <div class="how-wrap">
   <div class="how-inner">
     <div class="eyebrow">How It Works</div>
@@ -532,7 +412,8 @@
       <p class="cta-p">View live risk scores on Polygon Amoy or read the contract source on PolygonScan.</p>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap">
-      <button class="btn-a" onclick="openModal()">Open Dashboard →</button>
+      <!-- FIX: CTA button also uses openDash() gate -->
+      <button class="btn-a" onclick="openDash(event)">Open Dashboard →</button>
       <a href="https://amoy.polygonscan.com/address/0x4957Bb834169De7721cC87622FB9cFf839cC6201" target="_blank" class="btn-b">View Contract ↗</a>
     </div>
   </div>
@@ -546,7 +427,7 @@
         <div class="logo-mark"></div>
         <div class="logo-words">
           <div class="logo-name">Nirvanatechon</div>
-          <div class="logo-sub">AI Docal</div>
+          <div class="logo-sub">AI Oracle</div>
         </div>
       </a>
       <p>Verifiable AI oracle for DeFi risk intelligence. Detecting manipulation on-chain — built on Polygon, powered by PyTorch.</p>
@@ -588,115 +469,231 @@
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script>
-let connected = false, addr = null;
+/* ═══════════════════════════════════════════════════
+   WALLET LOGIC — index.html
+   
+   RULES:
+   - Every "Dashboard" button/link calls openDash()
+   - openDash() checks sessionStorage first
+   - If already authorized → go straight to dashboard
+   - If not → open modal
+   - Modal has 3 outcomes:
+       1. Connect MetaMask → store walletAddr → redirect
+       2. View Read-Only   → store readOnly=true → redirect
+       3. Reject / close   → show error, stay on page
+   ═══════════════════════════════════════════════════ */
 
-// Live score in hero
 const CONTRACT = "0x4957Bb834169De7721cC87622FB9cFf839cC6201";
-const ABI = ["function getRiskScore(string memory asset) external view returns (uint256)", "function isSafe(string memory asset) external view returns (bool)"];
-async function fetchHeroScore(){
-    try{
+const ABI = [
+    "function getRiskScore(string memory asset) external view returns (uint256)",
+    "function isSafe(string memory asset) external view returns (bool)"
+];
+
+/* ── Modal open / close ────────────────────────── */
+function openModal() {
+    const installBox = document.getElementById('mInstall');
+    const btn        = document.getElementById('mmBtn');
+    const st         = document.getElementById('mStatus');
+
+    // Reset status every time modal opens
+    st.className  = 'm-status';
+    st.textContent = '';
+
+    // Detect MetaMask
+    if (typeof window.ethereum === 'undefined') {
+        installBox.classList.add('show');
+        btn.disabled     = true;
+        btn.style.opacity = '0.35';
+    } else {
+        installBox.classList.remove('show');
+        btn.disabled     = false;
+        btn.style.opacity = '';
+    }
+
+    document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+}
+
+// Click outside modal to close
+document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+});
+
+/* ── Gate: all Dashboard links call this ─────── */
+function openDash(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    // Already authorized this session? Go directly.
+    if (sessionStorage.getItem('walletAddr') || sessionStorage.getItem('readOnly') === 'true') {
+        window.location.href = 'dashboard.html';
+        return;
+    }
+    // Otherwise show wallet modal
+    openModal();
+}
+
+/* ── Read-only path ──────────────────────────── */
+function goReadOnly() {
+    sessionStorage.setItem('readOnly', 'true');
+    sessionStorage.removeItem('walletAddr');
+    window.location.href = 'dashboard.html';
+}
+
+/* ── MetaMask connect → redirect ─────────────── */
+async function connectAndGo() {
+    const st  = document.getElementById('mStatus');
+    const btn = document.getElementById('mmBtn');
+
+    if (typeof window.ethereum === 'undefined') {
+        st.className  = 'm-status show err';
+        st.textContent = '⚠ MetaMask not detected. Please install it first.';
+        return;
+    }
+
+    btn.disabled   = true;
+    st.className   = 'm-status show';
+    st.textContent = '⏳ Waiting for MetaMask approval...';
+
+    try {
+        // Step 1: Request accounts
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        if (!accounts || accounts.length === 0) {
+            throw new Error('No accounts returned from MetaMask.');
+        }
+
+        const addr = accounts[0];
+        st.textContent = '⏳ Switching to Polygon Amoy...';
+
+        // Step 2: Switch / add Polygon Amoy
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x13882' }]  // 80002 in hex
+            });
+        } catch (sw) {
+            if (sw.code === 4902) {
+                // Network not in MetaMask yet — add it
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x13882',
+                        chainName: 'Polygon Amoy Testnet',
+                        nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                        rpcUrls: ['https://rpc-amoy.polygon.technology'],
+                        blockExplorerUrls: ['https://amoy.polygonscan.com']
+                    }]
+                });
+            } else if (sw.code === 4001) {
+                // User rejected network switch — still OK, dashboard reads via hardcoded RPC
+            } else {
+                throw sw;
+            }
+        }
+
+        // Step 3: Save to sessionStorage and redirect
+        sessionStorage.setItem('walletAddr', addr);
+        sessionStorage.removeItem('readOnly');
+
+        const short = addr.slice(0, 6) + '...' + addr.slice(-4);
+        st.className  = 'm-status show ok';
+        st.textContent = '✓ Connected: ' + short + ' — Opening dashboard...';
+
+        // Update nav button to show connected state
+        document.getElementById('wBtn').classList.add('on');
+        document.getElementById('wLbl').textContent = short;
+
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 900);
+
+    } catch (err) {
+        btn.disabled = false;  // Re-enable so user can try again
+
+        if (err.code === 4001) {
+            // USER REJECTED — clear message, stay on page, do NOT redirect
+            st.className  = 'm-status show err';
+            st.textContent = '✕ Connection rejected. Please connect your wallet to continue.';
+        } else {
+            st.className  = 'm-status show err';
+            st.textContent = '⚠ ' + (err.message || 'Connection failed. Please try again.');
+        }
+    }
+}
+
+/* ── Restore nav button if already connected ─── */
+window.addEventListener('load', async () => {
+    // Check sessionStorage first (fastest)
+    const stored = sessionStorage.getItem('walletAddr');
+    if (stored) {
+        document.getElementById('wBtn').classList.add('on');
+        document.getElementById('wLbl').textContent = stored.slice(0,6) + '...' + stored.slice(-4);
+        return;
+    }
+    // Also check if MetaMask is already unlocked
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            const acc = await window.ethereum.request({ method: 'eth_accounts' });
+            if (acc.length) {
+                const addr = acc[0];
+                sessionStorage.setItem('walletAddr', addr);
+                document.getElementById('wBtn').classList.add('on');
+                document.getElementById('wLbl').textContent = addr.slice(0,6) + '...' + addr.slice(-4);
+            }
+        } catch (e) { /* silent */ }
+    }
+});
+
+/* ── Hero live score (decorative, no auth required) ── */
+async function fetchHeroScore() {
+    try {
         const p = new ethers.providers.JsonRpcProvider("https://rpc-amoy.polygon.technology");
         const c = new ethers.Contract(CONTRACT, ABI, p);
-        const [score, safe] = await Promise.all([c.getRiskScore("MATIC/USDC"), c.isSafe("MATIC/USDC")]);
+        const [score, safe] = await Promise.all([
+            c.getRiskScore("MATIC/USDC"),
+            c.isSafe("MATIC/USDC")
+        ]);
         const s = score.toNumber();
         const el = document.getElementById('liveScore');
         const sb = document.getElementById('liveSafe');
         el.textContent = s.toLocaleString();
-        el.style.color = s < 4000 ? 'var(--green)' : s < 7000 ? 'var(--yellow)' : 'var(--red)';
-        sb.textContent = safe ? '✓ SAFE' : '✕ UNSAFE';
-        sb.style.color = safe ? 'var(--green)' : 'var(--red)';
+        el.style.color  = s < 4000 ? 'var(--green)' : s < 7000 ? 'var(--yellow)' : 'var(--red)';
+        sb.textContent  = safe ? '✓ SAFE' : '✕ UNSAFE';
+        sb.style.color  = safe ? 'var(--green)' : 'var(--red)';
         sb.style.borderColor = safe ? 'rgba(0,255,170,.2)' : 'rgba(255,64,87,.2)';
-        sb.style.background = safe ? 'rgba(0,255,170,.08)' : 'rgba(255,64,87,.08)';
-    }catch(e){ document.getElementById('liveScore').textContent='0'; document.getElementById('liveSafe').textContent='SAFE'; }
+        sb.style.background  = safe ? 'rgba(0,255,170,.08)' : 'rgba(255,64,87,.08)';
+    } catch (e) {
+        document.getElementById('liveScore').textContent = '—';
+        document.getElementById('liveSafe').textContent  = 'OFFLINE';
+    }
 }
 fetchHeroScore();
 setInterval(fetchHeroScore, 15000);
 
-// Modal
-function openModal(){ document.getElementById('modal').classList.add('show'); }
-function closeModal(){ document.getElementById('modal').classList.remove('show'); document.getElementById('mStatus').className='m-status'; }
-document.getElementById('modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal(); });
-
-function openDash(e){
-    e.preventDefault();
-    if(connected) window.location.href='dashboard.html';
-    else openModal();
-}
-
-async function connectAndGo(){
-    const st = document.getElementById('mStatus');
-    // No MetaMask — just go to dashboard anyway (no error shown)
-    if(typeof window.ethereum === 'undefined'){
-        st.className='m-status show';
-        st.style.background='rgba(0,220,255,.08)';
-        st.style.borderColor='rgba(0,220,255,.25)';
-        st.style.color='var(--c)';
-        st.textContent='⏳ Opening dashboard...';
-        setTimeout(()=>{ window.location.href='dashboard.html'; }, 800);
-        return;
-    }
-    st.className='m-status show';
-    st.textContent='⏳ Connecting...';
-    try{
-        const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
-        addr = accounts[0];
-        const short = addr.slice(0,6)+'...'+addr.slice(-4);
-        st.textContent='⏳ Switching to Polygon Amoy...';
-        try{
-            await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x13882'}]});
-        }catch(sw){
-            if(sw.code===4902){
-                await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
-                    chainId:'0x13882',chainName:'Polygon Amoy Testnet',
-                    nativeCurrency:{name:'MATIC',symbol:'MATIC',decimals:18},
-                    rpcUrls:['https://rpc-amoy.polygon.technology'],
-                    blockExplorerUrls:['https://amoy.polygonscan.com']
-                }]});
-            }
-        }
-        connected = true;
-        document.getElementById('wBtn').classList.add('on');
-        document.getElementById('wLbl').textContent = short;
-        st.className='m-status show ok';
-        st.textContent='✓ Connected: '+short+' — Redirecting...';
-        setTimeout(()=>{ closeModal(); window.location.href='dashboard.html'; }, 1000);
-    }catch(err){
-        // User rejected — just redirect silently
-        if(err.code===4001){
-            setTimeout(()=>{ closeModal(); window.location.href='dashboard.html'; }, 400);
-        } else {
-            st.className='m-status show ok';
-            st.textContent='↗ Opening dashboard...';
-            setTimeout(()=>{ closeModal(); window.location.href='dashboard.html'; }, 800);
-        }
-    }
-}
-
-// Check existing connection
-window.addEventListener('load', async()=>{
-    if(typeof window.ethereum!=='undefined'){
-        const acc = await window.ethereum.request({method:'eth_accounts'});
-        if(acc.length){
-            connected=true; addr=acc[0];
-            const short=addr.slice(0,6)+'...'+addr.slice(-4);
-            document.getElementById('wBtn').classList.add('on');
-            document.getElementById('wLbl').textContent=short;
-        }
-    }
-});
-
-// Card entrance
+/* ── Card entrance animations ────────────────── */
 const items = document.querySelectorAll('.feat,.step');
-const io = new IntersectionObserver(es=>{
-    es.forEach((e,i)=>{
-        if(e.isIntersecting){
-            const idx=parseInt(e.target.dataset.i)||0;
-            setTimeout(()=>{ e.target.style.opacity='1'; e.target.style.transform='none'; }, idx*70);
+const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+        if (e.isIntersecting) {
+            const idx = parseInt(e.target.dataset.i) || 0;
+            setTimeout(() => {
+                e.target.style.opacity   = '1';
+                e.target.style.transform = 'none';
+            }, idx * 70);
             io.unobserve(e.target);
         }
     });
-},{threshold:.1});
-items.forEach((el,i)=>{ el.dataset.i=i%6; el.style.opacity='0'; el.style.transform='translateY(18px)'; el.style.transition='opacity .5s ease, transform .5s ease'; io.observe(el); });
+}, { threshold: .1 });
+items.forEach((el, i) => {
+    el.dataset.i = i % 6;
+    el.style.opacity   = '0';
+    el.style.transform = 'translateY(18px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+    io.observe(el);
+});
 </script>
 </body>
 </html>

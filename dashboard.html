@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +7,6 @@
     <title>Verifiable AI Oracle — Polygon Amoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- ethers.js v5 for blockchain reading (no wallet needed, read-only) -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         :root {
@@ -24,618 +24,198 @@
             --mono:      'Space Mono', monospace;
             --sans:      'DM Sans', sans-serif;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 9999; }
+        body::after  { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,210,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.03) 1px,transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
 
-        body {
-            font-family: var(--sans);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
+        /* ── AUTH GATE ───────────────────────────── */
+        /* Shown while checking; redirects if not authorized */
+        #authGate {
+            position: fixed; inset: 0; background: var(--bg); z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
         }
+        #authGate.hidden { display: none; }
+        .auth-box { text-align: center; font-family: var(--mono); padding: 40px; }
+        .auth-box p { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+        .auth-box .auth-redirect { font-size: 11px; color: var(--cyan); }
 
-        /* Scanline overlay */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0,0,0,0.03) 2px,
-                rgba(0,0,0,0.03) 4px
-            );
-            pointer-events: none;
-            z-index: 9999;
-        }
+        /* ── DASHBOARD ───────────────────────────── */
+        /* Hidden by default; shown only after auth passes */
+        #dashboard { display: none; }
+        #dashboard.visible { display: block; }
 
-        /* Grid background */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(0,210,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,210,255,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-            z-index: 0;
-        }
+        .wrap { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 20px; }
+        .logo-block h1 { font-family: var(--mono); font-size: 13px; color: var(--cyan); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 6px; }
+        .logo-block .tagline { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.1; }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 
-        .wrap {
-            position: relative;
-            z-index: 1;
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 32px 24px 60px;
-        }
+        .wallet-badge { display: flex; align-items: center; gap: 10px; background: rgba(0,255,135,0.08); border: 1px solid rgba(0,255,135,0.25); padding: 10px 16px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--green); }
+        .readonly-badge { background: rgba(255,224,102,0.08); border: 1px solid rgba(255,224,102,0.25); padding: 10px 16px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--yellow); }
 
-        /* ── HEADER ─────────────────────────────── */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 48px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo-block h1 {
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--cyan);
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            margin-bottom: 6px;
-        }
-
-        .logo-block .tagline {
-            font-size: 28px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.1;
-        }
-
-        .header-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
-        }
-
-        .network-pill {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--cyan-dim);
-            border: 1px solid var(--border-hl);
-            padding: 8px 14px;
-            border-radius: 4px;
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--cyan);
-        }
-
-        .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--green);
-            animation: blink 1.8s ease-in-out infinite;
-        }
-
-        .dot.error { background: var(--red); animation: none; }
+        .network-pill { display: flex; align-items: center; gap: 8px; background: var(--cyan-dim); border: 1px solid var(--border-hl); padding: 8px 14px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--cyan); }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 1.8s ease-in-out infinite; }
+        .dot.error   { background: var(--red);    animation: none; }
         .dot.loading { background: var(--yellow); }
+        @keyframes blink { 0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,255,135,0.6); } 50% { opacity:0.6; box-shadow: 0 0 0 5px rgba(0,255,135,0); } }
+        .refresh-info { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+        .disconnect-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-family: var(--mono); font-size: 10px; padding: 6px 12px; cursor: pointer; border-radius: 2px; transition: all 0.2s; }
+        .disconnect-btn:hover { border-color: var(--red); color: var(--red); }
 
-        @keyframes blink {
-            0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,255,135,0.6); }
-            50% { opacity:0.6; box-shadow: 0 0 0 5px rgba(0,255,135,0); }
-        }
-
-        .refresh-info {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-dim);
-        }
-
-        /* ── MAIN SCORE ──────────────────────────── */
-        .hero {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px;
-            margin-bottom: 2px;
-        }
-
-        .score-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 48px 40px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .score-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-            opacity: 0.6;
-        }
-
-        .score-label {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 16px;
-        }
-
-        .score-number {
-            font-family: var(--mono);
-            font-size: 96px;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 8px;
-            transition: color 0.4s ease;
-        }
-
-        .score-number.safe     { color: var(--green); text-shadow: 0 0 40px rgba(0,255,135,0.3); }
-        .score-number.medium   { color: var(--yellow); text-shadow: 0 0 40px rgba(255,224,102,0.3); }
-        .score-number.danger   { color: var(--red);    text-shadow: 0 0 40px rgba(255,64,87,0.3); }
-        .score-number.loading  { color: var(--text-dim); }
-
-        .score-max {
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 24px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            font-family: var(--mono);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            padding: 8px 20px;
-            border-radius: 2px;
-            transition: all 0.4s ease;
-        }
-
-        .status-badge.safe   { background: rgba(0,255,135,0.12); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
+        .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+        .score-panel { background: var(--panel); border: 1px solid var(--border); padding: 48px 40px; text-align: center; position: relative; overflow: hidden; }
+        .score-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,transparent,var(--cyan),transparent); opacity: 0.6; }
+        .score-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
+        .score-number { font-family: var(--mono); font-size: 96px; font-weight: 700; line-height: 1; margin-bottom: 8px; transition: color 0.4s ease; }
+        .score-number.safe   { color: var(--green);  text-shadow: 0 0 40px rgba(0,255,135,0.3); }
+        .score-number.medium { color: var(--yellow); text-shadow: 0 0 40px rgba(255,224,102,0.3); }
+        .score-number.danger { color: var(--red);    text-shadow: 0 0 40px rgba(255,64,87,0.3); }
+        .score-number.loading { color: var(--text-dim); }
+        .score-max { font-family: var(--mono); font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+        .status-badge { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 8px 20px; border-radius: 2px; transition: all 0.4s ease; }
+        .status-badge.safe   { background: rgba(0,255,135,0.12);  color: var(--green);  border: 1px solid rgba(0,255,135,0.3); }
         .status-badge.medium { background: rgba(255,224,102,0.12); color: var(--yellow); border: 1px solid rgba(255,224,102,0.3); }
-        .status-badge.danger { background: rgba(255,64,87,0.12); color: var(--red); border: 1px solid rgba(255,64,87,0.3); }
+        .status-badge.danger { background: rgba(255,64,87,0.12);   color: var(--red);    border: 1px solid rgba(255,64,87,0.3); }
         .status-badge.loading { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--border-hl); }
-
-        /* Safe meter panel */
-        .safe-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 48px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 24px;
-        }
-
-        .safe-label {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-        }
-
-        .safe-verdict {
-            font-family: var(--mono);
-            font-size: 48px;
-            font-weight: 700;
-            letter-spacing: -1px;
-            transition: color 0.4s;
-        }
-
-        .safe-verdict.yes { color: var(--green); }
-        .safe-verdict.no  { color: var(--red); }
+        .score-trend { font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 2px; display: none; margin-top: 12px; }
+        .score-trend.up   { display: inline-block; color: var(--red);      background: rgba(255,64,87,0.1);   border: 1px solid rgba(255,64,87,0.25); }
+        .score-trend.down { display: inline-block; color: var(--green);    background: rgba(0,255,135,0.1);   border: 1px solid rgba(0,255,135,0.25); }
+        .score-trend.flat { display: inline-block; color: var(--text-dim); background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
+        .safe-panel { background: var(--panel); border: 1px solid var(--border); padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px; }
+        .safe-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 3px; }
+        .safe-verdict { font-family: var(--mono); font-size: 48px; font-weight: 700; letter-spacing: -1px; transition: color 0.4s; }
+        .safe-verdict.yes     { color: var(--green); }
+        .safe-verdict.no      { color: var(--red); }
         .safe-verdict.loading { color: var(--text-dim); }
-
-        /* Gauge ring */
-        .gauge-wrap {
-            position: relative;
-            width: 140px;
-            height: 140px;
-        }
-
-        .gauge-wrap svg {
-            transform: rotate(-90deg);
-        }
-
-        .gauge-bg {
-            fill: none;
-            stroke: rgba(255,255,255,0.05);
-            stroke-width: 8;
-        }
-
-        .gauge-fill {
-            fill: none;
-            stroke-width: 8;
-            stroke-linecap: round;
-            stroke-dasharray: 377;
-            stroke-dashoffset: 377;
-            transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
-        }
-
-        .gauge-center {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .gauge-pct {
-            font-family: var(--mono);
-            font-size: 22px;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .gauge-sub {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* ── STATS ROW ───────────────────────────── */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2px;
-            margin-bottom: 2px;
-        }
-
-        .stat {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 24px 28px;
-            transition: border-color 0.2s;
-        }
-
+        .gauge-wrap { position: relative; width: 140px; height: 140px; }
+        .gauge-wrap svg { transform: rotate(-90deg); }
+        .gauge-bg   { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 8; }
+        .gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 377; stroke-dashoffset: 377; transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease; }
+        .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .gauge-pct { font-family: var(--mono); font-size: 22px; font-weight: 700; color: #fff; }
+        .gauge-sub { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 2px; margin-bottom: 2px; }
+        .stat { background: var(--panel); border: 1px solid var(--border); padding: 24px 28px; transition: border-color 0.2s; }
         .stat:hover { border-color: var(--border-hl); }
-
-        .stat-lbl {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
-
-        .stat-val {
-            font-family: var(--mono);
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--cyan);
-            margin-bottom: 4px;
-        }
-
-        .stat-sub {
-            font-size: 11px;
-            color: var(--text-dim);
-        }
-
-        /* ── CHART ───────────────────────────────── */
-        .chart-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 32px;
-            margin-bottom: 2px;
-        }
-
-        .panel-title {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--cyan);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .panel-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .chart-box {
-            height: 280px;
-            position: relative;
-        }
-
-        /* ── FEED ────────────────────────────────── */
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px;
-            margin-bottom: 2px;
-        }
-
-        .feed-panel, .defi-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 32px;
-        }
-
-        .feed-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
+        .stat-lbl { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .stat-val { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--cyan); margin-bottom: 4px; }
+        .stat-sub { font-size: 11px; color: var(--text-dim); }
+        .chart-panel { background: var(--panel); border: 1px solid var(--border); padding: 32px; margin-bottom: 2px; }
+        .panel-title { font-family: var(--mono); font-size: 10px; color: var(--cyan); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .chart-box { height: 280px; position: relative; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+        .feed-panel, .defi-panel { background: var(--panel); border: 1px solid var(--border); padding: 32px; }
+        .feed-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease; }
         .feed-item:last-child { border-bottom: none; }
-
-        .feed-ts {
-            font-family: var(--mono);
-            font-size: 10px;
-            color: var(--text-dim);
-            margin-bottom: 3px;
-        }
-
-        .feed-desc {
-            font-size: 13px;
-            color: var(--text);
-        }
-
-        .feed-score {
-            font-family: var(--mono);
-            font-size: 14px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 2px;
-            background: var(--cyan-dim);
-            color: var(--cyan);
-            border: 1px solid var(--border);
-            white-space: nowrap;
-            margin-left: 12px;
-        }
-
-        /* ── DEFI ────────────────────────────────── */
-        .defi-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .defi-card {
-            border: 1px solid var(--border);
-            padding: 24px;
-            text-align: center;
-            border-radius: 2px;
-        }
-
-        .defi-card-label {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
-        }
-
-        .defi-val {
-            font-family: var(--mono);
-            font-size: 18px;
-            font-weight: 700;
-            padding: 8px 16px;
-            border-radius: 2px;
-            display: inline-block;
-        }
-
+        .feed-ts   { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
+        .feed-desc { font-size: 13px; color: var(--text); }
+        .feed-score { font-family: var(--mono); font-size: 14px; font-weight: 700; padding: 4px 10px; border-radius: 2px; white-space: nowrap; margin-left: 12px; }
+        .defi-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .defi-card  { border: 1px solid var(--border); padding: 24px; text-align: center; border-radius: 2px; }
+        .defi-card-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+        .defi-val { font-family: var(--mono); font-size: 18px; font-weight: 700; padding: 8px 16px; border-radius: 2px; display: inline-block; }
         .defi-val.open   { background: rgba(0,255,135,0.1); color: var(--green); border: 1px solid rgba(0,255,135,0.25); }
         .defi-val.closed { background: rgba(255,64,87,0.1);  color: var(--red);   border: 1px solid rgba(255,64,87,0.25); }
-
-        /* ── RAW CONTRACT DATA ───────────────────── */
-        .raw-panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 32px;
-            margin-bottom: 2px;
-        }
-
-        .raw-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .raw-field {
-            background: #03060f;
-            border: 1px solid var(--border);
-            padding: 16px 20px;
-            border-radius: 2px;
-        }
-
-        .raw-field-label {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        .raw-field-value {
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--cyan);
-            word-break: break-all;
-        }
-
-        .raw-field-value.highlight {
-            color: var(--green);
-            font-size: 18px;
-        }
-
-        .raw-call-log {
-            background: #010309;
-            border: 1px solid var(--border);
-            border-radius: 2px;
-            padding: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
+        .raw-panel  { background: var(--panel); border: 1px solid var(--border); padding: 32px; margin-bottom: 2px; }
+        .raw-grid   { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-bottom: 24px; }
+        .raw-field  { background: #03060f; border: 1px solid var(--border); padding: 16px 20px; border-radius: 2px; }
+        .raw-field-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+        .raw-field-value { font-family: var(--mono); font-size: 13px; color: var(--cyan); word-break: break-all; }
+        .raw-field-value.highlight { color: var(--green); font-size: 18px; }
+        .raw-call-log { background: #010309; border: 1px solid var(--border); border-radius: 2px; padding: 20px; max-height: 200px; overflow-y: auto; }
         .raw-call-log::-webkit-scrollbar { width: 4px; }
-        .raw-call-log::-webkit-scrollbar-track { background: transparent; }
         .raw-call-log::-webkit-scrollbar-thumb { background: var(--border-hl); border-radius: 2px; }
-
-        .log-line {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-dim);
-            line-height: 1.8;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-        }
-
-        .log-line .log-time { color: var(--text-dim); }
-        .log-line .log-ok   { color: var(--green); }
-        .log-line .log-err  { color: var(--red); }
-        .log-line .log-val  { color: var(--cyan); }
-
-        /* ── FOOTER ──────────────────────────────── */
-        footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 24px;
-            border-top: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 2px;
-        }
-
+        .log-line { font-family: var(--mono); font-size: 11px; color: var(--text-dim); line-height: 1.8; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; margin-bottom: 4px; }
+        .log-ok  { color: var(--green); }
+        .log-err { color: var(--red); }
+        .log-val { color: var(--cyan); }
+        footer { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 16px; margin-top: 2px; }
         .contract-block { display: flex; flex-direction: column; gap: 6px; }
-
-        .contract-tag {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .contract-addr {
-            font-family: var(--mono);
-            font-size: 13px;
-            color: var(--cyan);
-        }
-
-        .explorer-link {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--cyan);
-            text-decoration: none;
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 2px;
-            transition: all 0.2s;
-        }
-
-        .explorer-link:hover {
-            background: var(--cyan-dim);
-            border-color: var(--border-hl);
-        }
-
-        /* ── RESPONSIVE ──────────────────────────── */
-        @media (max-width: 900px) {
-            .hero, .two-col { grid-template-columns: 1fr; }
-            .stats-row { grid-template-columns: repeat(2, 1fr); }
-            .score-number { font-size: 64px; }
-            .raw-grid { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 480px) {
-            .stats-row { grid-template-columns: 1fr; }
-            .score-number { font-size: 48px; }
-        }
-
-        /* Loading shimmer */
-        @keyframes shimmer {
-            0% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-            100% { opacity: 0.4; }
-        }
+        .contract-tag  { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; }
+        .contract-addr { font-family: var(--mono); font-size: 13px; color: var(--cyan); }
+        .explorer-link { font-family: var(--mono); font-size: 11px; color: var(--cyan); text-decoration: none; border: 1px solid var(--border); padding: 8px 16px; border-radius: 2px; transition: all 0.2s; }
+        .explorer-link:hover { background: var(--cyan-dim); border-color: var(--border-hl); }
+        @keyframes shimmer { 0%,100% { opacity:0.4; } 50% { opacity:0.8; } }
         .shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        @media (max-width: 900px) {
+            .hero,.two-col { grid-template-columns:1fr; }
+            .stats-row { grid-template-columns:repeat(2,1fr); }
+            .score-number { font-size:64px; }
+            .raw-grid { grid-template-columns:1fr; }
+        }
+        @media (max-width: 480px) {
+            .stats-row { grid-template-columns:1fr; }
+            .score-number { font-size:48px; }
+            .wrap { padding: 20px 16px 40px; }
+            .score-panel, .safe-panel { padding: 32px 20px; }
+        }
     </style>
 </head>
 <body>
 
+<!-- AUTH GATE: visible by default, hidden after auth passes -->
+<div id="authGate">
+    <div class="auth-box">
+        <p>Checking authorization...</p>
+        <p class="auth-redirect" id="authMsg">Please wait...</p>
+    </div>
+</div>
+
+<!-- DASHBOARD: hidden by default, shown after auth passes -->
+<div id="dashboard">
 <div class="wrap">
 
-    <!-- ── HEADER ──────────────────────────────── -->
     <header>
         <div class="logo-block">
             <h1>// Verifiable AI Oracle</h1>
             <div class="tagline">On-Chain Risk Intelligence<br>for MATIC/USDC</div>
         </div>
         <div class="header-right">
+            <div id="walletBadge" class="wallet-badge" style="display:none">
+                <div class="dot"></div>
+                <span id="walletAddr">—</span>
+            </div>
+            <div id="readonlyBadge" class="readonly-badge" style="display:none">
+                👁 READ-ONLY MODE
+            </div>
             <div class="network-pill">
                 <div class="dot loading" id="statusDot"></div>
-                <span id="networkLabel">Polygon Amoy — ChainID 80002</span>
+                <span>Polygon Amoy — ChainID 80002</span>
             </div>
             <div class="refresh-info" id="refreshInfo">Connecting to blockchain...</div>
+            <button class="disconnect-btn" onclick="disconnect()">✕ Disconnect</button>
         </div>
     </header>
 
-    <!-- ── HERO: SCORE + SAFE ───────────────────── -->
     <div class="hero">
         <div class="score-panel">
             <div class="score-label">// getRiskScore("MATIC/USDC")</div>
             <div class="score-number loading shimmer" id="scoreNumber">—</div>
             <div class="score-max">out of 10,000</div>
-            <div class="status-badge loading" id="statusBadge">CONNECTING</div>
+            <div class="status-badge loading" id="statusBadge">LOADING</div>
+            <div id="scoreTrend" class="score-trend"></div>
         </div>
-
         <div class="safe-panel">
             <div class="safe-label">// isSafe("MATIC/USDC")</div>
-
             <div class="gauge-wrap">
                 <svg width="140" height="140" viewBox="0 0 140 140">
-                    <circle class="gauge-bg" cx="70" cy="70" r="60"/>
-                    <circle class="gauge-fill" id="gaugeFill" cx="70" cy="70" r="60"
-                        stroke="var(--cyan)"/>
+                    <circle class="gauge-bg"   cx="70" cy="70" r="60"/>
+                    <circle class="gauge-fill" id="gaugeFill" cx="70" cy="70" r="60" stroke="var(--cyan)"/>
                 </svg>
                 <div class="gauge-center">
                     <div class="gauge-pct" id="gaugePct">—</div>
                     <div class="gauge-sub">/ 10000</div>
                 </div>
             </div>
-
             <div class="safe-verdict loading shimmer" id="safeVerdict">—</div>
             <div class="score-label" style="margin-bottom:0">Threshold: &lt; 7,000 = SAFE</div>
         </div>
     </div>
 
-    <!-- ── STATS ────────────────────────────────── -->
     <div class="stats-row">
         <div class="stat">
             <div class="stat-lbl">Risk Score</div>
@@ -648,7 +228,7 @@
             <div class="stat-sub">Normalized</div>
         </div>
         <div class="stat">
-            <div class="stat-lbl">Last Block Read</div>
+            <div class="stat-lbl">Last Block</div>
             <div class="stat-val" id="s3" style="font-size:18px">—</div>
             <div class="stat-sub">Block number</div>
         </div>
@@ -659,7 +239,6 @@
         </div>
     </div>
 
-    <!-- ── CHART ────────────────────────────────── -->
     <div class="chart-panel">
         <div class="panel-title">Risk Score History (live readings)</div>
         <div class="chart-box">
@@ -667,7 +246,6 @@
         </div>
     </div>
 
-    <!-- ── FEED + DEFI ───────────────────────────── -->
     <div class="two-col">
         <div class="feed-panel">
             <div class="panel-title">Live Blockchain Readings</div>
@@ -675,12 +253,11 @@
                 <div class="feed-item">
                     <div>
                         <div class="feed-ts">—</div>
-                        <div class="feed-desc">Awaiting first blockchain read...</div>
+                        <div class="feed-desc shimmer">Connecting to Polygon Amoy...</div>
                     </div>
                 </div>
             </div>
         </div>
-
         <div class="defi-panel">
             <div class="panel-title">DeFi Gate Status</div>
             <div class="defi-grid">
@@ -704,10 +281,8 @@
         </div>
     </div>
 
-    <!-- ── RAW CONTRACT DATA ─────────────────────── -->
     <div class="raw-panel">
         <div class="panel-title">Raw Contract Data</div>
-
         <div class="raw-grid">
             <div class="raw-field">
                 <div class="raw-field-label">Contract Address</div>
@@ -726,22 +301,20 @@
                 <div class="raw-field-value highlight" id="rawSafe">Fetching...</div>
             </div>
             <div class="raw-field">
-                <div class="raw-field-label">RPC Endpoint</div>
-                <div class="raw-field-value">https://rpc-amoy.polygon.technology</div>
+                <div class="raw-field-label">Connected Wallet</div>
+                <div class="raw-field-value" id="rawWallet">—</div>
             </div>
             <div class="raw-field">
                 <div class="raw-field-label">Last Successful Read</div>
                 <div class="raw-field-value" id="rawLastRead">—</div>
             </div>
         </div>
-
         <div class="raw-field-label" style="margin-bottom:8px">RPC Call Log</div>
         <div class="raw-call-log" id="callLog">
-            <div class="log-line"><span class="log-time">[INIT]</span> Initializing ethers.js provider...</div>
+            <div class="log-line">[INIT] Dashboard booting...</div>
         </div>
     </div>
 
-    <!-- ── FOOTER ────────────────────────────────── -->
     <footer>
         <div class="contract-block">
             <div class="contract-tag">Smart Contract</div>
@@ -750,55 +323,98 @@
         <a href="https://amoy.polygonscan.com/address/0x4957Bb834169De7721cC87622FB9cFf839cC6201"
            target="_blank" class="explorer-link">View on PolygonScan →</a>
     </footer>
-
 </div>
+</div><!-- /dashboard -->
 
 <script>
-// ═══════════════════════════════════════════════════
-//  BLOCKCHAIN CONFIG
-// ═══════════════════════════════════════════════════
-const CONTRACT_ADDRESS = "0x4957Bb834169De7721cC87622FB9cFf839cC6201";
-const RPC_URL          = "https://rpc-amoy.polygon.technology";
-const ASSET            = "MATIC/USDC";
-const REFRESH_INTERVAL = 15; // seconds
-const SAFE_THRESHOLD   = 7000;
+/* ═══════════════════════════════════════════════════════
+   AUTH CHECK — runs immediately, before anything else
+   
+   HOW IT WORKS:
+   - sessionStorage.walletAddr  = set by index.html after MetaMask connect
+   - sessionStorage.readOnly    = "true" set by index.html read-only click
+   - If neither is set → user came here directly → redirect to index.html
+   ═══════════════════════════════════════════════════════ */
 
-// Minimal ABI — only the two functions we need
+const walletAddr  = sessionStorage.getItem('walletAddr');
+const isReadOnly  = sessionStorage.getItem('readOnly') === 'true';
+const isAuthorized = !!(walletAddr || isReadOnly);
+
+if (!isAuthorized) {
+    // Not authorized — show message and redirect
+    document.getElementById('authMsg').textContent = 'Please connect your wallet first. Redirecting...';
+    setTimeout(() => {
+        window.location.replace('index.html');
+    }, 1500);
+    // Stop all further script execution
+    throw new Error('AUTH_REDIRECT');
+}
+
+// ── AUTHORIZED: hide gate, show dashboard ──────────
+document.getElementById('authGate').classList.add('hidden');
+document.getElementById('dashboard').classList.add('visible');
+
+// Show correct wallet indicator in header
+if (walletAddr) {
+    const short = walletAddr.slice(0, 6) + '...' + walletAddr.slice(-4);
+    document.getElementById('walletBadge').style.display = 'flex';
+    document.getElementById('walletAddr').textContent    = short;
+    document.getElementById('rawWallet').textContent     = walletAddr;
+} else {
+    document.getElementById('readonlyBadge').style.display = 'block';
+    document.getElementById('rawWallet').textContent       = 'Read-only (no wallet)';
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHAIN CONFIG
+   ═══════════════════════════════════════════════════════ */
+const CONTRACT_ADDRESS = "0x4957Bb834169De7721cC87622FB9cFf839cC6201";
+const RPCS = [
+    "https://rpc-amoy.polygon.technology",
+    "https://polygon-amoy.g.alchemy.com/v2/demo",
+    "https://polygon-amoy-bor-rpc.publicnode.com"
+];
+const ASSET   = "MATIC/USDC";
+const REFRESH = 15;
 const ABI = [
     "function getRiskScore(string memory asset) external view returns (uint256)",
     "function isSafe(string memory asset) external view returns (bool)"
 ];
 
-// ═══════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════
-let provider, contract;
-let scoreHistory  = [];
-let timeHistory   = [];
-let feedHistory   = [];
-let countdown     = REFRESH_INTERVAL;
-let countdownTimer;
-let riskChart;
-let totalReads    = 0;
+let provider, contract, riskChart;
+let scoreHistory = [], timeHistory = [], feedHistory = [];
+let countdown = REFRESH, countdownTimer;
+let lastScore = null, rpcIndex = 0;
 
-// ═══════════════════════════════════════════════════
-//  LOGGING
-// ═══════════════════════════════════════════════════
-function log(msg, type = 'info') {
-    const el  = document.getElementById('callLog');
-    const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-    const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-val';
+/* ── Disconnect ──────────────────────────────────── */
+function disconnect() {
+    clearInterval(countdownTimer);
+    sessionStorage.removeItem('walletAddr');
+    sessionStorage.removeItem('readOnly');
+    window.location.href = 'index.html';
+}
+
+/* ── Log to RPC call log panel ───────────────────── */
+function log(msg, type = '') {
+    const el = document.getElementById('callLog');
+    if (!el) return;
+    const t   = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : type === 'val' ? 'log-val' : '';
     const line = document.createElement('div');
     line.className = 'log-line';
-    line.innerHTML = `<span class="log-time">[${now}]</span> <span class="${cls}">${msg}</span>`;
+    line.innerHTML = `<span style="color:var(--text-dim)">[${t}]</span> <span class="${cls}">${msg}</span>`;
     el.prepend(line);
-    // Keep max 50 lines
     while (el.children.length > 50) el.removeChild(el.lastChild);
 }
 
-// ═══════════════════════════════════════════════════
-//  CHART INIT
-// ═══════════════════════════════════════════════════
+// Log initial state after auth
+if (walletAddr) {
+    log('Wallet: ' + walletAddr.slice(0,6) + '...' + walletAddr.slice(-4), 'ok');
+} else {
+    log('Mode: Read-only', 'val');
+}
+
+/* ── Chart setup ─────────────────────────────────── */
 function initChart() {
     const ctx = document.getElementById('riskChart').getContext('2d');
     riskChart = new Chart(ctx, {
@@ -813,11 +429,11 @@ function initChart() {
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointBackgroundColor: '#00d2ff',
+                pointBackgroundColor: [],
                 pointBorderColor: '#08101a',
                 pointBorderWidth: 2,
                 pointRadius: 5,
-                pointHoverRadius: 7,
+                pointHoverRadius: 7
             }]
         },
         options: {
@@ -827,219 +443,170 @@ function initChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    padding: 12,
-                    titleColor: '#00d2ff',
-                    bodyColor: '#c8d8e8',
-                    borderColor: 'rgba(0,210,255,0.3)',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: c => `Score: ${c.parsed.y} / 10000`
-                    }
+                    backgroundColor: 'rgba(0,0,0,0.9)', padding: 12,
+                    titleColor: '#00d2ff', bodyColor: '#c8d8e8',
+                    borderColor: 'rgba(0,210,255,0.3)', borderWidth: 1,
+                    callbacks: { label: c => `Score: ${c.parsed.y.toLocaleString()} / 10,000` }
                 }
             },
             scales: {
-                y: {
-                    min: 0, max: 10000,
-                    grid: { color: 'rgba(0,210,255,0.06)', drawBorder: false },
-                    ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 } }
-                },
-                x: {
-                    grid: { display: false, drawBorder: false },
-                    ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 } }
-                }
+                y: { min: 0, max: 10000, grid: { color: 'rgba(0,210,255,0.06)', drawBorder: false }, ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 } } },
+                x: { grid: { display: false, drawBorder: false }, ticks: { color: '#4a5a72', font: { family: 'Space Mono', size: 10 }, maxRotation: 0 } }
             }
         }
     });
 }
 
-// ═══════════════════════════════════════════════════
-//  RISK CLASSIFICATION
-// ═══════════════════════════════════════════════════
-function classify(score) {
-    if (score < 4000) return { cls: 'safe',   label: 'LOW RISK',    color: 'var(--green)' };
-    if (score < 7000) return { cls: 'medium', label: 'MEDIUM RISK', color: 'var(--yellow)' };
-    return                   { cls: 'danger', label: 'HIGH RISK',   color: 'var(--red)' };
+function classify(s) {
+    if (s < 4000) return { cls: 'safe',   label: 'LOW RISK',    color: '#00ff87' };
+    if (s < 7000) return { cls: 'medium', label: 'MEDIUM RISK', color: '#ffe066' };
+    return               { cls: 'danger', label: 'HIGH RISK',   color: '#ff4057' };
 }
 
-// ═══════════════════════════════════════════════════
-//  UPDATE UI
-// ═══════════════════════════════════════════════════
-function updateUI(score, safe, blockNum) {
-    const pct   = ((score / 10000) * 100).toFixed(1);
-    const info  = classify(score);
-    const now   = new Date();
-    const ts    = now.toLocaleTimeString('en-US', { hour12: false });
+/* ── Update all dashboard UI ─────────────────────── */
+function updateUI(score, safe, block) {
+    const pct  = ((score / 10000) * 100).toFixed(1);
+    const info = classify(score);
+    const ts   = new Date().toLocaleTimeString('en-US', { hour12: false });
 
-    // Score panel
-    const scoreEl = document.getElementById('scoreNumber');
-    scoreEl.textContent = score.toLocaleString();
-    scoreEl.className = `score-number ${info.cls}`;
-    scoreEl.classList.remove('shimmer');
+    const sn = document.getElementById('scoreNumber');
+    sn.textContent = score.toLocaleString();
+    sn.className   = `score-number ${info.cls}`;
+    sn.classList.remove('shimmer');
 
-    const badge = document.getElementById('statusBadge');
-    badge.textContent = info.label;
-    badge.className = `status-badge ${info.cls}`;
+    document.getElementById('statusBadge').textContent = info.label;
+    document.getElementById('statusBadge').className   = `status-badge ${info.cls}`;
 
-    // Safe panel
-    const verdictEl = document.getElementById('safeVerdict');
-    verdictEl.textContent = safe ? 'SAFE ✓' : 'UNSAFE ✗';
-    verdictEl.className   = `safe-verdict ${safe ? 'yes' : 'no'}`;
-    verdictEl.classList.remove('shimmer');
+    // Trend indicator
+    const trendEl = document.getElementById('scoreTrend');
+    if (lastScore !== null) {
+        const d = score - lastScore;
+        if      (d > 50)  { trendEl.textContent = `▲ +${d} Risk rising`;  trendEl.className = 'score-trend up'; }
+        else if (d < -50) { trendEl.textContent = `▼ ${d} Risk falling`;  trendEl.className = 'score-trend down'; }
+        else              { trendEl.textContent = `= Stable`;             trendEl.className = 'score-trend flat'; }
+    }
+    lastScore = score;
+
+    // Safe verdict
+    const vd = document.getElementById('safeVerdict');
+    vd.textContent = safe ? 'SAFE ✓' : 'UNSAFE ✗';
+    vd.className   = `safe-verdict ${safe ? 'yes' : 'no'}`;
+    vd.classList.remove('shimmer');
 
     // Gauge
-    const circumference = 377;
-    const offset = circumference - (score / 10000) * circumference;
-    const gauge  = document.getElementById('gaugeFill');
-    gauge.style.strokeDashoffset = offset;
-    gauge.style.stroke = info.color;
+    const offset = 377 - (score / 10000) * 377;
+    const g = document.getElementById('gaugeFill');
+    g.style.strokeDashoffset = offset;
+    g.style.stroke = info.color;
     document.getElementById('gaugePct').textContent = score.toLocaleString();
 
-    // Stats
+    // Stats row
     document.getElementById('s1').textContent = score.toLocaleString();
     document.getElementById('s2').textContent = pct + '%';
-    document.getElementById('s3').textContent = blockNum ? '#' + blockNum.toLocaleString() : '—';
+    document.getElementById('s3').textContent = block ? '#' + block.toLocaleString() : '—';
 
-    // Raw data
-    document.getElementById('rawScore').textContent = score.toString();
-    document.getElementById('rawSafe').textContent  = safe.toString();
-    document.getElementById('rawLastRead').textContent = now.toLocaleString();
+    // Raw fields
+    document.getElementById('rawScore').textContent    = score.toString();
+    document.getElementById('rawSafe').textContent     = safe.toString();
+    document.getElementById('rawLastRead').textContent = new Date().toLocaleString();
 
-    // DeFi gates (logic based on score)
-    const setGate = (id, open) => {
+    // DeFi gates
+    const gate = (id, open) => {
         const el = document.getElementById(id);
         el.textContent = open ? 'OPEN' : 'CLOSED';
         el.className   = `defi-val ${open ? 'open' : 'closed'}`;
     };
-    setGate('defiLiquidation', score < 8000);
-    setGate('defiBorrow',      score < 6000);
-    setGate('defiTrading',     score < 7000);
-    setGate('defiCollateral',  score < 5000);
+    gate('defiLiquidation', score < 8000);
+    gate('defiBorrow',      score < 6000);
+    gate('defiTrading',     score < 7000);
+    gate('defiCollateral',  score < 5000);
 
-    // History
+    // History (keep last 20)
     scoreHistory.push(score);
     timeHistory.push(ts);
-    if (scoreHistory.length > 20) {
-        scoreHistory.shift();
-        timeHistory.shift();
-    }
+    if (scoreHistory.length > 20) { scoreHistory.shift(); timeHistory.shift(); }
 
-    // Chart
-    riskChart.data.labels   = timeHistory;
+    // Chart update
+    riskChart.data.labels = timeHistory;
     riskChart.data.datasets[0].data = scoreHistory;
+    riskChart.data.datasets[0].pointBackgroundColor = scoreHistory.map(s => classify(s).color);
     riskChart.update();
 
     // Feed
-    feedHistory.unshift({ ts, score, safe });
+    feedHistory.unshift({ ts, score, safe, block });
     if (feedHistory.length > 8) feedHistory.pop();
-    const feedEl = document.getElementById('feedContainer');
-    feedEl.innerHTML = feedHistory.map(f => `
-        <div class="feed-item">
+    document.getElementById('feedContainer').innerHTML = feedHistory.map(f => {
+        const fi = classify(f.score);
+        return `<div class="feed-item">
             <div>
-                <div class="feed-ts">${f.ts}</div>
-                <div class="feed-desc">Blockchain read — asset: ${ASSET}</div>
+                <div class="feed-ts">${f.ts}${f.block ? ' · Block #' + f.block.toLocaleString() : ''}</div>
+                <div class="feed-desc">oracle read → <span style="color:${fi.color}">${fi.label}</span></div>
             </div>
-            <div class="feed-score">${f.score.toLocaleString()}</div>
-        </div>
-    `).join('');
+            <div class="feed-score" style="color:${fi.color};border:1px solid ${fi.color}40;background:${fi.color}15">${f.score.toLocaleString()}</div>
+        </div>`;
+    }).join('');
 
-    // Status dot
-    document.getElementById('statusDot').className = 'dot';
-    document.getElementById('refreshInfo').textContent =
-        `Last read: ${ts} • Auto-refresh every ${REFRESH_INTERVAL}s`;
-
-    totalReads++;
+    document.getElementById('statusDot').className  = 'dot';
+    document.getElementById('refreshInfo').textContent = `Last read: ${ts} · Auto-refresh every ${REFRESH}s`;
 }
 
-// ═══════════════════════════════════════════════════
-//  FETCH FROM BLOCKCHAIN
-// ═══════════════════════════════════════════════════
-async function fetchFromChain() {
+/* ── Fetch from blockchain ───────────────────────── */
+async function fetchChain() {
     document.getElementById('statusDot').className = 'dot loading';
-    log(`Calling getRiskScore("${ASSET}") on contract...`);
-
+    log(`getRiskScore("${ASSET}")...`);
     try {
-        // Both calls in parallel
         const [score, safe, block] = await Promise.all([
             contract.getRiskScore(ASSET),
             contract.isSafe(ASSET),
             provider.getBlockNumber()
         ]);
-
-        const scoreNum = score.toNumber();
-        log(`getRiskScore → ${scoreNum}`, 'ok');
-        log(`isSafe       → ${safe}`, 'ok');
-        log(`Block number → ${block}`, 'val');
-
-        updateUI(scoreNum, safe, block);
-
+        const n = score.toNumber();
+        log(`score=${n} safe=${safe} block=${block}`, 'ok');
+        updateUI(n, safe, block);
     } catch (err) {
-        document.getElementById('statusDot').className = 'dot error';
+        document.getElementById('statusDot').className    = 'dot error';
+        document.getElementById('refreshInfo').textContent = '⚠ Read failed — retrying in ' + REFRESH + 's...';
         log(`ERROR: ${err.message}`, 'err');
-        document.getElementById('refreshInfo').textContent =
-            `⚠ Read failed — retrying in ${REFRESH_INTERVAL}s`;
-
-        // Show error state
-        document.getElementById('rawScore').textContent = 'Error — see log';
-        document.getElementById('rawSafe').textContent  = 'Error — see log';
-
-        // If score is 0 (contract not yet updated), show 0 gracefully
-        if (err.message.includes('call revert') || err.message.includes('BAD_DATA')) {
-            log('Score may be 0 — contract score not yet submitted', 'val');
-            updateUI(0, true, null);
-        }
+        // Rotate to next RPC
+        rpcIndex = (rpcIndex + 1) % RPCS.length;
+        log(`Switching to RPC[${rpcIndex}]: ${RPCS[rpcIndex]}`, 'val');
+        provider = new ethers.providers.JsonRpcProvider(RPCS[rpcIndex]);
+        contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
     }
 }
 
-// ═══════════════════════════════════════════════════
-//  COUNTDOWN TIMER
-// ═══════════════════════════════════════════════════
 function startCountdown() {
-    countdown = REFRESH_INTERVAL;
+    countdown = REFRESH;
     clearInterval(countdownTimer);
     countdownTimer = setInterval(() => {
         countdown--;
         document.getElementById('s4').textContent = countdown + 's';
         if (countdown <= 0) {
-            countdown = REFRESH_INTERVAL;
-            fetchFromChain();
+            countdown = REFRESH;
+            fetchChain();
         }
     }, 1000);
 }
 
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
-async function init() {
-    log('Initializing ethers.js v5 provider...');
-    log(`RPC: ${RPC_URL}`);
-
+async function initChain() {
+    log('Connecting to Polygon Amoy...');
     try {
-        provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+        provider = new ethers.providers.JsonRpcProvider(RPCS[rpcIndex]);
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
         log(`Contract: ${CONTRACT_ADDRESS}`, 'ok');
         log(`Asset: "${ASSET}"`, 'val');
-
-        // First fetch immediately
-        await fetchFromChain();
-
-        // Then every 15 seconds
+        await fetchChain();
         startCountdown();
-
     } catch (err) {
-        log(`INIT FAILED: ${err.message}`, 'err');
+        log(`Init failed: ${err.message}`, 'err');
         document.getElementById('statusDot').className = 'dot error';
-        document.getElementById('refreshInfo').textContent = '⚠ Connection failed';
     }
 }
 
-// ═══════════════════════════════════════════════════
-//  BOOT
-// ═══════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-    initChart();
-    init();
-});
+/* ── Boot dashboard ──────────────────────────────── */
+// Auth already confirmed above — safe to initialize everything
+initChart();
+initChain();
 </script>
 </body>
 </html>
