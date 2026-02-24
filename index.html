@@ -222,6 +222,58 @@
             .foot-top{grid-template-columns:1fr;gap:28px;padding:0 16px 32px}
             footer{padding:40px 16px 28px}
         }
+        @media(max-width:480px){
+            /* NAV */
+            nav{height:56px;padding:0 14px}
+            .logo-name{font-size:11px}
+            .logo-sub{font-size:7px}
+            .btn-wlt{font-size:9px;padding:7px 12px;letter-spacing:1px}
+
+            /* HERO */
+            .hero{padding:76px 14px 44px;gap:0}
+            .hero-tag{font-size:8px;letter-spacing:2px;margin-bottom:20px}
+            .hero h1{font-size:clamp(34px,9vw,52px);margin-bottom:18px}
+            .hero-sub{font-size:13px;margin-bottom:28px}
+            .hero-btns{flex-direction:column;gap:10px}
+            .btn-a,.btn-b{width:100%;justify-content:center;padding:13px 20px;font-size:10px}
+
+            /* MODAL */
+            .modal{padding:40px 20px 32px;width:100%;border-radius:0}
+            .modal h2{font-size:22px}
+            .modal p{font-size:12px;margin-bottom:24px}
+            .btn-mm{padding:13px;font-size:10px}
+
+            /* STATS */
+            .stat{padding:20px 16px}
+            .stat-n{font-size:26px}
+            .stat-l{font-size:8px}
+
+            /* FEATURES */
+            .section{padding:60px 14px}
+            .sec-h{font-size:clamp(24px,7vw,36px);margin-bottom:40px}
+            .feat{padding:28px 20px}
+            .feat-t{font-size:15px}
+            .feat-d{font-size:12px}
+
+            /* HOW IT WORKS */
+            .how-inner{padding:60px 14px}
+            .steps{border:none;gap:1px}
+            .step{padding:28px 20px;border:1px solid var(--border);border-right:1px solid var(--border)!important}
+            .step:not(:last-child)::after{display:none}
+            .step-n{font-size:40px}
+            .step-d{font-size:12px}
+
+            /* CTA */
+            .cta-inner{padding:60px 14px;flex-direction:column;gap:24px}
+            .cta-inner>div:last-child{width:100%;display:flex;flex-direction:column;gap:10px}
+            .cta-inner .btn-a,.cta-inner .btn-b{width:100%;justify-content:center}
+
+            /* FOOTER */
+            footer{padding:36px 14px 24px}
+            .foot-top{padding:0 0 28px}
+            .foot-bot{flex-direction:column;align-items:flex-start;gap:8px}
+            .foot-addr{font-size:8px;word-break:break-all}
+        }
     </style>
 </head>
 <body>
