@@ -86,58 +86,7 @@ modifier safeMarket() {
 
 ---
 
-## 🚀 Setup Instructions
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- MetaMask wallet with Polygon Amoy MATIC ([get free MATIC](https://faucet.polygon.technology/))
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/divyansh01440/ai-oracle.git
-cd ai-oracle
-```
-
-### 2. Install Python dependencies
-```bash
-pip install torch scikit-learn web3 flask requests numpy python-dotenv pandas
-```
-
-### 3. Install Hardhat dependencies
-```bash
-cd contracts
-npm install
-cd ..
-```
-
-### 4. Configure environment
-```bash
-# Create contracts/.env
-echo "PRIVATE_KEY=your_metamask_private_key_here" > contracts/.env
-```
-
-### 5. Train the AI model
-```bash
-python data_pipeline.py   # fetch & label training data
-python train.py           # train PyTorch model → saves oracle_model.pth
-```
-
-### 6. Submit a score manually
-```bash
-python submit_score.py
-```
-
-### 7. Run the Flask API
-```bash
-python api.py
-# API available at http://localhost:5000/score
-```
-
-### 8. Open the dashboard
-Open `dashboard.html` in your browser — connect MetaMask to Polygon Amoy.
-
----
 
 ## 🤖 GitHub Actions (Auto-Submission)
 
